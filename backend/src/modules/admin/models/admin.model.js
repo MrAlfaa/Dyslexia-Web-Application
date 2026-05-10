@@ -21,6 +21,27 @@ const adminSchema = new mongoose.Schema(
       enum: ["school admin", "super admin"],
       required: true,
     },
+    subscriptionPlan: {
+      type: String,
+      enum: ["individual", "plus", "premium"],
+      default: "individual",
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ["active", "inactive", "trial"],
+      default: "trial",
+    },
+    childLimit: {
+      type: Number,
+      default: 1,
+    },
+    planStartedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    planExpiresAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

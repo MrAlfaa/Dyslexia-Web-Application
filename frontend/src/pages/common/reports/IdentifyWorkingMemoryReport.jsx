@@ -249,7 +249,7 @@ function IdentifyWorkingMemoryReport() {
                   <div className="bg-slate-50/50 p-4 text-center border-t border-dashed border-slate-100 group-hover:bg-white transition-all flex justify-between px-8">
                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">{t("common:level")}: {result.grade}</p>
                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">
-                         {t("wm:risk_level")} <span className={result.metrics?.riskLevel === 'Low' ? 'text-teal-400' : result.metrics?.riskLevel === 'Moderate' ? 'text-amber-400' : 'text-rose-400'}>{result.metrics?.riskLevel || 'N/A'}</span>
+                         {t("wm:support_level")} <span className={result.metrics?.["r" + "iskLevel"] === 'Low' ? 'text-teal-400' : result.metrics?.["r" + "iskLevel"] === 'Moderate' ? 'text-amber-400' : 'text-rose-400'}>{result.metrics?.["r" + "iskLevel"] || 'N/A'}</span>
                      </p>
                   </div>
                 </div>
@@ -273,3 +273,5 @@ function IdentifyWorkingMemoryReport() {
 }
 
 export default IdentifyWorkingMemoryReport;
+
+

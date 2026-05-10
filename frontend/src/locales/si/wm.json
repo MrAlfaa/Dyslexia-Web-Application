@@ -11,7 +11,7 @@
   "avg_speed": "සාමාන්‍ය වේගය",
   "digit_span": "ඩිජිට් ස්පෑන් (Digit Span)",
   "needs_practice": "පුහුණුව අවශ්‍යයි:",
-  "risk_level": "අවදානම් මට්ටම:",
+  "support_level": "අවදානම් මට්ටම:",
   "super_brain": "ඔබට සුපිරි මොළයක් ඇත! 🧠✨",
   "prep_memory_recall": "දී ඇති ඉලක්කම් අනුපිළිවෙලින් මතක තබා ගන්න",
   "prep_word_memory": "මෙම වචන පිළිවලින් හොඳින් මතක තබාගන්න",
@@ -20,7 +20,7 @@
   "submit_answers": "පිළිතුරු ඉදිරිපත් කරන්න!",
   "woo_hoo": "නියමයි! 🎉",
   "final_score_label": "අවසාන ලකුණු",
-  "risk_level_label": "අවදානම් මට්ටම:",
+  "support_level_label": "අවදානම් මට්ටම:",
   "practice_label": "පුහුණු විය යුතු කරුණු:",
   "play_again": "නැවත සෙල්ලම් කරන්න",
   "back_home": "මුල් පිටුවට",
@@ -29,3 +29,4 @@
   "quest": "ප්‍රශ්නය",
   "build_strong_memory": "මතකය ශක්තිමත් කරමු!"
 }
+

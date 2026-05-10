@@ -14,3 +14,7 @@ export const registerAdmin = (data) => {
 export const login = (data) => {
   return API.post("/auth/login", data);
 };
+
+export const loginStudentByUsername = (data) => {
+  return API.post("/auth/login/student", data);
+};

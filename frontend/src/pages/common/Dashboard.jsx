@@ -1,265 +1,199 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { getStudentProfile } from "../../services/student/api";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
+import leo from "../../assets/lexiland/leo-lion.png";
+
+const identificationCards = [
+  { id: "wm", title: "Working Memory Check", animal: "Bunny", icon: "B", color: "from-sky-500 to-cyan-500" },
+  { id: "pa", title: "Phonological Awareness Check", animal: "Parrot", icon: "P", color: "from-pink-500 to-rose-500" },
+  { id: "rp", title: "Reading Processing Check", animal: "Owl", icon: "O", color: "from-violet-500 to-indigo-500" },
+  { id: "sp", title: "Leo's Speech Check", animal: "Leo the Lion", icon: "L", color: "from-amber-500 to-orange-500" },
+];
+
+const leoActivityTitles = {
+  leo_first_sound_hunt: "First Sound Hunt",
+  leo_echo_roar: "Echo Roar",
+  leo_robot_words: "Robot Word Safari",
+  leo_sound_twins: "Sound Twins",
+  leo_story_roar: "Story Roar Trail",
+};
 
 function Dashboard() {
   const role = localStorage.getItem("role");
   const navigate = useNavigate();
-  const { t } = useTranslation('common');
   const [profile, setProfile] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getStudentProfile();
+        setProfile(res.data);
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+      }
+    };
     fetchProfile();
   }, []);
 
-  const fetchProfile = async () => {
-    try {
-      const res = await getStudentProfile();
-      setProfile(res.data);
-    } catch (err) {
-      console.error("Error fetching profile:", err);
-    }
+  const progress = profile?.lexilandProgress || {};
+  const speech = progress.speech || {};
+  const speechTrainingUnlocked =
+    Boolean(progress.improvementUnlocked || speech.improvementUnlocked) ||
+    import.meta.env.VITE_LEXILAND_DEV_UNLOCK === "true";
+  const improvementUnlocked = Boolean(progress.improvementUnlocked);
+
+  const speechCompleted = speech.identificationStatus === "completed";
+  const speechInProgress = speech.identificationStatus === "in_progress";
+
+  const handleIdentification = (id) => {
+    if (id === "wm") navigate(`/working-memory/${profile?.grade || "3"}`);
+    else if (id === "pa") navigate(`/identificationActivities-pa/${profile?.grade || "3"}`);
+    else if (id === "sp") navigate("/speech-processing");
+    else navigate("/reading-processing");
   };
 
-  const cards = [
-    {
-      id: "wm",
-      title: t("working_memory"),
-      path: "/working-memory",
-      image: "/images/4.png",
-    },
-    {
-      id: "pa",
-      title: t("phonological_awareness"),
-      path: "/phonological-awareness",
-      image: "/images/1.png",
-    },
-    {
-      id: "rp",
-      title: t("reading_processing"),
-      path: "/reading-processing",
-      image: "/images/2.png",
-    },
-    {
-      id: "sp",
-      title: t("speech_processing"),
-      path: "/speech-processing",
-      image: "/images/3.png",
-    },
-  ];
-
-  const handleCategoryClick = (card) => {
-    setSelectedCategory(card);
-    setShowModal(true);
-  };
-
-  const handleActivitySelect = (type) => {
-    if (type === "identification" && selectedCategory?.id === "pa") {
-      navigate(`/identificationActivities-pa/${profile.grade}`);
-    } else if (type === "identification" && selectedCategory?.id === "wm") {
-      navigate(`/working-memory/${profile.grade}`);
-    } else {
-      console.log(`${type} clicked for ${selectedCategory?.title} - not implemented yet`);
-    }
-  };
-
-  const handleStartDemo = (type) => {
-    const path = type === "wm" 
-      ? `/working-memory/${profile.grade}?demo=true` 
-      : `/identificationActivities-pa/3?demo=true&ids=g3-si-4,g3-si-13`;
-    navigate(path);
-  };
+  const speechButtonText = useMemo(() => {
+    if (speechInProgress) return "Continue Leo's Speech Check";
+    if (!speechCompleted) return "Start Leo's Speech Check";
+    return speechTrainingUnlocked ? "Play Next Leo Game" : "View Leo's Progress";
+  }, [speechCompleted, speechInProgress, speechTrainingUnlocked]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      {/* Activity Selection Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn transition-all">
-          <div className="bg-white rounded-[3rem] p-10 max-w-2xl w-full shadow-2xl relative border-8 border-indigo-50">
+    <main className="child-game-shell min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,#f8f4c7,transparent_30%),linear-gradient(135deg,#ecfdf5,#f0fdfa_48%,#fff7ed)] p-5 text-slate-950 sm:p-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-700">LexiLand Jungle Adventure</p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
+              Hello, {profile?.fullName || "adventurer"}!
+            </h1>
+            <p className="mt-2 text-sm font-bold text-slate-500">
+              Learn with sounds, stories, and stars | logged in as {role}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-6 right-6 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-all font-bold"
+              onClick={() => navigate("/profile")}
+              className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-800 shadow-sm ring-1 ring-emerald-100"
             >
-              ✕
+              Profile
             </button>
-            <div className="text-center mb-10">
-              <span className="bg-indigo-100 text-indigo-700 px-6 py-1.5 rounded-full font-black text-sm tracking-widest uppercase mb-4 inline-block">
-                {t("grade")} {profile?.grade}
+          </div>
+        </header>
+
+        <section className="mt-8 grid items-center gap-6 rounded-[2.5rem] bg-white/75 p-6 shadow-2xl shadow-emerald-100/70 ring-1 ring-white/80 backdrop-blur lg:grid-cols-[1fr_340px]">
+          <div>
+            <h2 className="text-3xl font-black text-slate-950">Choose your jungle path</h2>
+            <p className="mt-3 max-w-2xl text-base font-bold leading-7 text-slate-600">
+              Start with your Identification Adventure. Training games unlock after your first adventure check is complete.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 ring-1 ring-emerald-100">
+                Identification: {progress.overallIdentificationStatus || "not_started"}
               </span>
-              <h3 className="text-4xl font-black text-gray-800 leading-tight">
-                {selectedCategory?.title}
-              </h3>
-              <p className="text-gray-500 mt-2 font-medium">{t("choose_activity")}</p>
+              <span className="rounded-full bg-amber-50 px-4 py-2 text-sm font-black text-amber-700 ring-1 ring-amber-100">
+                Stars ready to collect
+              </span>
             </div>
+          </div>
+          <img src={leo} alt="Leo the Lion" className="mx-auto max-h-72 object-contain" />
+        </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Identification Tile */}
-              <button
-                onClick={() => handleActivitySelect("identification")}
-                className="group relative bg-sky-50 hover:bg-sky-500 p-8 rounded-[2.5rem] border-b-8 border-sky-100 hover:border-sky-600 transition-all duration-300 transform hover:-translate-y-2 flex flex-col items-center shadow-lg"
-              >
-                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                  🔍
-                </div>
-                <h4 className="text-2xl font-black text-sky-800 group-hover:text-white mb-2 uppercase tracking-wide">
-                  {t("identification")}
-                </h4>
-                <p className="text-sky-600/70 group-hover:text-sky-100 text-sm font-bold text-center">
-                  {t("identification_desc")}
+        <section className="mt-8">
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Active</p>
+              <h2 className="text-3xl font-black text-slate-950">Identification Adventure</h2>
+            </div>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {identificationCards.map((card) => {
+              const isSpeech = card.id === "sp";
+              return (
+                <article key={card.id} className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200/45 ring-1 ring-white">
+                  <div className={`mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br ${card.color} text-2xl font-black text-white`}>
+                    {card.icon}
+                  </div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{card.animal}</p>
+                  <h3 className="mt-2 text-xl font-black text-slate-950">{card.title}</h3>
+                  {isSpeech && speechCompleted && (
+                    <span className="mt-3 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">
+                      Completed
+                    </span>
+                  )}
+                  {isSpeech && speechInProgress && (
+                    <span className="mt-3 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
+                      In Progress
+                    </span>
+                  )}
+                  {isSpeech && !speechCompleted && !speechInProgress && (
+                    <span className="mt-3 inline-flex rounded-full bg-slate-50 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-100">
+                      Not Started
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleIdentification(card.id)}
+                    className="mt-5 w-full rounded-3xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700"
+                  >
+                    {isSpeech ? speechButtonText : "Start Check"}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mt-10">
+          <div className="mb-4">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-amber-700">Locked Path</p>
+            <h2 className="text-3xl font-black text-slate-950">Improvement Adventure</h2>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {["Bunny Memory Trail", "Parrot Sound Garden", "Owl Reading Trail", "Leo's Training Safari"].map((title) => {
+              const isLeoTraining = title.includes("Leo");
+              const isUnlocked = isLeoTraining ? speechTrainingUnlocked : improvementUnlocked;
+              return (
+              <article key={title} className={`rounded-[2rem] p-5 shadow-xl ring-1 ${isUnlocked ? "bg-white shadow-emerald-100 ring-emerald-100" : "bg-slate-100/80 shadow-slate-200 ring-slate-200 opacity-75"}`}>
+                <h3 className="text-xl font-black text-slate-950">
+                  {isLeoTraining && isUnlocked ? "Leo's Training Safari" : title}
+                </h3>
+                <p className="mt-2 text-sm font-bold text-slate-500">
+                  {isUnlocked
+                    ? isLeoTraining
+                      ? `${leoActivityTitles[speech.currentActivityId] || "Next Leo game"} is ready. ${speech.stars || 0} stars collected.`
+                      : "Training game unlocked."
+                    : isLeoTraining
+                      ? "Complete your LexiLand checks to unlock Leo's Training Safari."
+                      : "Complete your first adventure check to unlock training games."}
                 </p>
-              </button>
-
-              {/* Improvement Tile */}
-              <button
-                onClick={() => handleActivitySelect("improvement")}
-                className="group relative bg-pink-50 hover:bg-pink-500 p-8 rounded-[2.5rem] border-b-8 border-pink-100 hover:border-pink-600 transition-all duration-300 transform hover:-translate-y-2 flex flex-col items-center shadow-lg"
-              >
-                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                  📈
-                </div>
-                <h4 className="text-2xl font-black text-pink-800 group-hover:text-white mb-2 uppercase tracking-wide">
-                  {t("improvement")}
-                </h4>
-                <p className="text-pink-600/70 group-hover:text-pink-100 text-sm font-bold text-center">
-                  {t("improvement_desc")}
-                </p>
-                <div className="absolute -top-4 -right-4 bg-orange-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-md">
-                  {t("coming_soon")}
-                </div>
-              </button>
-            </div>
-
-            <div className="mt-12 text-center text-gray-300 font-bold uppercase tracking-[0.4em] text-[10px]">
-              Step by step to success
-            </div>
+                <button
+                  type="button"
+                  disabled={!isUnlocked}
+                  onClick={() => isLeoTraining && navigate("/speech-processing/leo-training")}
+                  className="mt-5 w-full rounded-3xl bg-white px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 disabled:cursor-not-allowed disabled:text-slate-400"
+                >
+                  {isUnlocked ? (isLeoTraining ? "Play Next Leo Game" : "Start Training") : isLeoTraining ? "Leo's Training Safari Locked" : "Locked"}
+                </button>
+              </article>
+              );
+            })}
           </div>
-        </div>
-      )}
+        </section>
 
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-black text-gray-800 tracking-tight">
-            {t("hello")}, {profile?.fullName || '...'}!
-          </h1>
-          <p className="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1">{t("dashboard")} | {t("logged_in_as")}: {role}</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <LanguageSwitcher />
-          <button
-            onClick={() => navigate("/profile")}
-            className="flex items-center justify-center w-14 h-14 rounded-2xl bg-white shadow-[0_4px_0_rgba(0,0,0,0.05)] hover:shadow-lg transition-all border border-gray-100 overflow-hidden group hover:-translate-y-1 active:translate-y-0"
-            title={t("profile")}
-          >
-            {profile?.profilePhoto ? (
-              <img
-                src={profile.profilePhoto}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-indigo-500 flex items-center justify-center text-white group-hover:bg-indigo-600 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-            )}
+        <section className="mt-10 mb-10 rounded-[2rem] bg-emerald-900 p-6 text-white shadow-2xl shadow-emerald-200/60">
+          <h2 className="text-2xl font-black">Progress</h2>
+          <p className="mt-2 text-sm font-bold text-emerald-100">
+            Your guardian can see your learning support progress and recommendations.
+          </p>
+          <button onClick={() => navigate("/reports")} className="mt-5 rounded-3xl bg-white px-6 py-3 text-sm font-black text-emerald-900">
+            View My Progress
           </button>
-        </div>
+        </section>
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {cards.map((card, index) => (
-          <div
-            key={index}
-            onClick={() => handleCategoryClick(card)}
-            className="group cursor-pointer bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-indigo-200/50 transition-all duration-300 overflow-hidden border-b-8 border-gray-100 hover:border-indigo-400 transform hover:-translate-y-2 active:translate-y-0 active:border-b-0"
-          >
-            <div className="h-48 overflow-hidden bg-indigo-50/30 flex items-center justify-center p-6">
-              <img
-                src={card.image}
-                alt={card.title}
-                className="w-full h-full object-contain group-hover:scale-110 transition duration-500"
-              />
-            </div>
-
-            <div className="p-6 text-center">
-              <h2 className="text-xl font-black text-gray-800 group-hover:text-indigo-600 transition-colors leading-tight">
-                {card.title}
-              </h2>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* View Reports Section with Background Image */}
-      <div
-        className="mt-16 relative rounded-[3rem] overflow-hidden shadow-2xl group cursor-pointer transition-all duration-500 hover:scale-[1.01]"
-        onClick={() => navigate("/reports")}
-      >
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-          style={{ backgroundImage: "url('/images/reports_bg.png')" }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/40 to-transparent"></div>
-
-        <div className="relative z-10 p-12 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="text-center md:text-left">
-            <h2 className="text-5xl font-black text-white mb-3 drop-shadow-lg uppercase tracking-tight">{t("view_reports")}</h2>
-            <p className="text-white/90 font-bold text-xl drop-shadow-md max-w-md">{t("check_progress")}</p>
-          </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); navigate("/reports"); }}
-            className="px-12 py-6 bg-white hover:bg-indigo-50 text-indigo-600 font-black text-2xl rounded-2xl transition-all shadow-xl active:translate-y-1 uppercase tracking-wider flex items-center gap-4 group/btn"
-          >
-            <span className="group-hover/btn:scale-125 transition-transform">📊</span>
-            {t("see_my_progress")}
-          </button>
-        </div>
-      </div>
-
-      {/* Demo Section */}
-      <div className="mt-12 mb-20 flex flex-col items-center">
-        <h3 className="text-2xl font-black text-gray-400 uppercase tracking-[0.3em] mb-8">Try a Demo</h3>
-        <div className="flex gap-6 flex-wrap justify-center">
-          <button
-            onClick={() => handleStartDemo("wm")}
-            className="group relative px-12 py-6 bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white rounded-[2rem] border-b-8 border-indigo-100 hover:border-indigo-800 transition-all transform hover:-translate-y-2 active:translate-y-0 active:border-b-0 shadow-xl flex items-center gap-4"
-          >
-            <span className="text-4xl group-hover:scale-125 transition-transform">🧠</span>
-            <div className="text-left">
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Working Memory</p>
-              <p className="text-2xl font-black uppercase">WM Demo</p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => handleStartDemo("pa")}
-            className="group relative px-12 py-6 bg-pink-50 hover:bg-pink-600 text-pink-600 hover:text-white rounded-[2rem] border-b-8 border-pink-100 hover:border-pink-800 transition-all transform hover:-translate-y-2 active:translate-y-0 active:border-b-0 shadow-xl flex items-center gap-4"
-          >
-            <span className="text-4xl group-hover:scale-125 transition-transform">🗣️</span>
-            <div className="text-left">
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Phonological Awareness</p>
-              <p className="text-2xl font-black uppercase">PA Demo</p>
-            </div>
-          </button>
-        </div>
-      </div>
-
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out forwards;
-        }
-      `}</style>
-    </div>
+    </main>
   );
 }
 

@@ -1,4 +1,10 @@
 {
-  "title": "Speech Processing",
-  "welcome_message": "Welcome to the Speech Processing component."
+  "title": "Leo's Sound Safari",
+  "welcome_message": "Welcome to Leo's Sound Safari.",
+  "sound_adventure": "Leo's Sound Safari",
+  "speech_support": "Speech-Reading Support Level",
+  "start_demo": "Start Demo",
+  "look_and_say_word": "Look at the word and say it",
+  "try_again": "Let's try again",
+  "stars_earned": "You earned stars"
 }

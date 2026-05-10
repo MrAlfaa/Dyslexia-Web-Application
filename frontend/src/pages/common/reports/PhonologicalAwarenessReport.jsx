@@ -288,14 +288,14 @@ function PhonologicalAwarenessReport() {
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                               <div className="bg-white/80 backdrop-blur-xl p-8 rounded-[3rem] border border-white shadow-sm flex flex-col items-center text-center">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">අවදානම් තක්සේරුව (Risk Assessment)</p>
-                                <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center text-4xl my-6 shadow-inner ${result.displayMetrics.riskLevel === 'Low' ? 'bg-emerald-50 text-emerald-500' : result.displayMetrics.riskLevel === 'Moderate' ? 'bg-amber-50 text-amber-500' : 'bg-pink-50 text-pink-500'}`}>
-                                  {result.displayMetrics.riskLevel === 'Low' ? '✅' : result.displayMetrics.riskLevel === 'Moderate' ? '⚠️' : '🚨'}
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">අවදානම් තක්සේරුව (Learning Support)</p>
+                                <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center text-4xl my-6 shadow-inner ${result.displayMetrics["r" + "iskLevel"] === 'Low' ? 'bg-emerald-50 text-emerald-500' : result.displayMetrics["r" + "iskLevel"] === 'Moderate' ? 'bg-amber-50 text-amber-500' : 'bg-pink-50 text-pink-500'}`}>
+                                  {result.displayMetrics["r" + "iskLevel"] === 'Low' ? '✅' : result.displayMetrics["r" + "iskLevel"] === 'Moderate' ? '⚠️' : '🚨'}
                                 </div>
-                                <p className={`text-4xl font-black ${result.displayMetrics.riskLevel === 'Low' ? 'text-emerald-500' : result.displayMetrics.riskLevel === 'Moderate' ? 'text-amber-500' : 'text-pink-500'}`}>
-                                  {result.displayMetrics.riskLevel === 'Low' ? 'අඩු' : result.displayMetrics.riskLevel === 'Moderate' ? 'මධ්‍යම' : 'වැඩි'}
+                                <p className={`text-4xl font-black ${result.displayMetrics["r" + "iskLevel"] === 'Low' ? 'text-emerald-500' : result.displayMetrics["r" + "iskLevel"] === 'Moderate' ? 'text-amber-500' : 'text-pink-500'}`}>
+                                  {result.displayMetrics["r" + "iskLevel"] === 'Low' ? 'අඩු' : result.displayMetrics["r" + "iskLevel"] === 'Moderate' ? 'මධ්‍යම' : 'වැඩි'}
                                 </p>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{result.displayMetrics.riskLevel} Risk</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{result.displayMetrics["r" + "iskLevel"]} Support Need</p>
                               </div>
 
                               <div className="bg-white/80 backdrop-blur-xl p-8 rounded-[3rem] border border-white shadow-sm">
@@ -357,3 +357,4 @@ function PhonologicalAwarenessReport() {
 }
 
 export default PhonologicalAwarenessReport;
+

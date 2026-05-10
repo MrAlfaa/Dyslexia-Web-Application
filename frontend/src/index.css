@@ -1,1 +1,163 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Sinhala:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
+
+:root {
+  --font-guardian: "Inter", "Noto Sans Sinhala", system-ui, sans-serif;
+  --font-child: "Manrope", "Noto Sans Sinhala", system-ui, sans-serif;
+  --guardian-bg: #f7faf5;
+  --guardian-surface: #ffffff;
+  --guardian-sidebar: #10241e;
+  --guardian-primary: #157a5a;
+  --guardian-primary-dark: #0f5f48;
+  --guardian-accent: #f5b84b;
+  --guardian-blue: #4e9fdc;
+  --guardian-text: #101828;
+  --guardian-muted: #5b6475;
+  --guardian-border: #e5ede7;
+  --guardian-danger: #e5484d;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  font-family: "Inter", "Noto Sans Sinhala", system-ui, sans-serif;
+  background: #f7fbff;
+  color: #0f172a;
+}
+
+.guardian-shell {
+  font-family: var(--font-guardian);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(245, 184, 75, 0.12), transparent 24rem),
+    radial-gradient(circle at 92% 4%, rgba(78, 159, 220, 0.1), transparent 22rem),
+    linear-gradient(135deg, #f7faf5 0%, #f8fbf8 48%, #f6faf9 100%);
+}
+
+.guardian-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image:
+    radial-gradient(ellipse at 12% 22%, rgba(15, 95, 72, 0.35) 0 8%, transparent 9%),
+    radial-gradient(ellipse at 86% 18%, rgba(21, 122, 90, 0.32) 0 7%, transparent 8%),
+    radial-gradient(ellipse at 78% 88%, rgba(78, 159, 220, 0.28) 0 9%, transparent 10%);
+  background-size: 38rem 38rem, 32rem 32rem, 36rem 36rem;
+}
+
+.child-game-shell {
+  font-family: var(--font-child);
+}
+
+.guardian-focus {
+  outline: none;
+}
+
+.guardian-focus:focus-visible {
+  box-shadow: 0 0 0 4px rgba(21, 122, 90, 0.16);
+}
+
+.premium-page {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(253, 230, 138, 0.35), transparent 28rem),
+    radial-gradient(circle at 82% 28%, rgba(125, 211, 252, 0.22), transparent 30rem),
+    linear-gradient(135deg, #fffdf6 0%, #f8fcff 48%, #effdf8 100%);
+}
+
+.premium-card {
+  border: 1px solid rgba(226, 232, 240, 0.78);
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.soft-glow {
+  animation: soft-glow 4.8s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-scale-in {
+  animation: scale-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-up {
+  animation: fade-up 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-sound-wave {
+  height: 18px;
+  animation: sound-wave 920ms ease-in-out infinite alternate;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sound-wave {
+  from {
+    height: 16px;
+  }
+  to {
+    height: 44px;
+  }
+}
+
+@keyframes soft-glow {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.86;
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-scale-in,
+  .animate-fade-up,
+  .animate-sound-wave,
+  .soft-glow {
+    animation: none;
+  }
+}

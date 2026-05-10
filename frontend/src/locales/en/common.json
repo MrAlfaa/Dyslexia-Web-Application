@@ -14,7 +14,7 @@
   "phonological_awareness": "Phonological Awareness",
   "working_memory": "Working Memory",
   "reading_processing": "Reading Processing",
-  "speech_processing": "Speech Processing",
+  "speech_processing": "Leo's Sound Safari",
   "profile": "Profile",
   "level": "Level",
   "reports": "Reports",
@@ -48,5 +48,10 @@
   "open_book": "Open Book 📖",
   "fun_games": "Fun Games",
   "play_time": "Play Time 🎮",
-  "dream_big": "Dream Big, Play Hard!"
+  "dream_big": "Dream Big, Play Hard!",
+  "sound_adventure": "Leo's Sound Safari",
+  "speech_support": "Speech-Reading Support Level",
+  "start_demo": "Start Demo",
+  "teacher_admin_portal": "Guardian Console",
+  "student_portal": "Child Portal"
 }

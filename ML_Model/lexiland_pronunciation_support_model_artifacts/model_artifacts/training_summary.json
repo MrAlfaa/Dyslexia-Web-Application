@@ -1,0 +1,40 @@
+{
+  "project": "LexiLand - Leo's Sound Safari",
+  "model_purpose": "Prototype pronunciation/speech-reading support classification",
+  "main_model": "pronunciation_support_classifier.joblib",
+  "best_model_type": "random_forest",
+  "labels": [
+    "high_support",
+    "low_support",
+    "medium_support"
+  ],
+  "results": {
+    "random_forest": {
+      "accuracy": 0.678125,
+      "macro_f1": 0.5903360508703557
+    },
+    "gradient_boosting": {
+      "accuracy": 0.6390625,
+      "macro_f1": 0.5763806508844863
+    }
+  },
+  "regression_results": {
+    "mae": 0.7096746725208452,
+    "r2": 0.6753179027070524
+  },
+  "datasets_used": {
+    "speechocean762": 2500,
+    "kids_speech_dataset": 1199,
+    "speech_content_fluency_pronunciation": 436
+  },
+  "supervised_rows": 2500,
+  "unlabeled_rows": 1635,
+  "feature_count": 44,
+  "created_at": "2026-05-09T19:10:24.304276",
+  "important_limitations": [
+    "This is not a dyslexia diagnosis model.",
+    "Public datasets do not provide dyslexia labels.",
+    "Labels are derived from pronunciation/fluency scores.",
+    "Final Speech-Reading Support model must be retrained using locally collected grade 2-5 labeled data."
+  ]
+}

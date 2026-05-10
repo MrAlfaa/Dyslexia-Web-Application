@@ -1,8 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { adminRegister } from "../../services/admin/api";
+import logo from "../../assets/lexiland/lexiland-logo.png";
+
+const plans = [
+  { value: "individual", label: "Individual", limit: "1 child" },
+  { value: "plus", label: "Plus", limit: "5 children" },
+  { value: "premium", label: "Premium", limit: "100 children" },
+];
 
 const AdminRegister = () => {
   const navigate = useNavigate();
@@ -11,21 +18,22 @@ const AdminRegister = () => {
     email: "",
     password: "",
     role: "school admin",
+    subscriptionPlan: "individual",
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    setFormData({ ...formData, [event.target.name]: event.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:5000/api/admin/register", formData);
+      const response = await adminRegister(formData);
       if (response.data.success) {
-        toast.success("Account created successfully!");
+        toast.success("Guardian account created");
         navigate("/admin/login");
       }
     } catch (error) {
@@ -36,97 +44,86 @@ const AdminRegister = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden font-sans py-12">
+    <main className="min-h-screen overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-amber-50 px-4 py-5 text-slate-950 sm:px-6">
       <ToastContainer position="top-right" autoClose={3000} />
-      
-      {/* Decorative Elements */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] translate-x-1/3 -translate-y-1/3"></div>
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[120px] -translate-x-1/3 translate-y-1/3"></div>
+      <section className="relative mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-5xl items-center justify-center">
+        <div className="absolute left-10 top-12 h-32 w-32 rounded-full bg-lime-200/45 blur-3xl" />
+        <div className="absolute bottom-14 right-12 h-40 w-40 rounded-full bg-teal-200/50 blur-3xl" />
 
-      <div className="max-w-lg w-full mx-4 relative z-10 animate-fadeIn">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-emerald-600/30">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
-          </div>
-          <h2 className="text-3xl font-black text-white tracking-tight leading-none mb-2">New Account</h2>
-          <p className="text-slate-400 font-medium uppercase tracking-[0.3em] text-[10px]">Administrative Registration</p>
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-10 rounded-[2.5rem] shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Identity Name</label>
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                required
-                placeholder="e.g. John Doe"
-                className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 focus:bg-white/10 transition-all outline-none placeholder:text-slate-600"
+        <div className="w-full overflow-hidden rounded-[2.5rem] border border-white/80 bg-white/75 p-6 shadow-2xl shadow-emerald-100/70 backdrop-blur sm:p-10 lg:p-12">
+          <header className="flex flex-wrap items-center justify-between gap-4">
+            <Link to="/" className="flex items-center gap-3">
+              <img
+                src={logo}
+                alt="LexiLand"
+                className="h-12 w-12 rounded-2xl bg-white object-cover p-1 shadow-sm ring-1 ring-emerald-100"
               />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Official Email Address</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="admin@institution.edu"
-                className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 focus:bg-white/10 transition-all outline-none placeholder:text-slate-600"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Administrative Role</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 focus:bg-white/10 transition-all outline-none appearance-none"
-              >
-                <option value="school admin" className="bg-slate-900 text-white">School Administrator</option>
-                <option value="super admin" className="bg-slate-900 text-white">Super Administrator</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Secure Passphrase</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="Minimum 8 characters"
-                className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 focus:bg-white/10 transition-all outline-none placeholder:text-slate-600"
-              />
-            </div>
-            
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center py-5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-xl shadow-emerald-600/20 text-sm font-black uppercase tracking-widest transition-all duration-300 disabled:bg-slate-700 disabled:shadow-none active:scale-[0.98]"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : "Create Account"}
-            </button>
-          </form>
-          
-          <div className="mt-8 pt-8 border-t border-white/5 text-center">
-            <p className="text-sm text-slate-400 font-medium">
-              Already have credentials?{" "}
-              <Link to="/admin/login" className="text-emerald-400 hover:text-emerald-300 font-black transition-colors ml-1">
-                Authenticate Now
+              <span className="text-xl font-black tracking-tight sm:text-2xl">
+                LexiLand
+              </span>
+            </Link>
+            <div className="flex flex-wrap gap-3 text-sm font-extrabold">
+              <Link to="/" className="rounded-full bg-slate-100 px-4 py-2 text-slate-700 transition hover:bg-slate-200">
+                Back to LexiLand
               </Link>
-            </p>
+              <Link to="/login" className="rounded-full bg-emerald-50 px-4 py-2 text-emerald-700 transition hover:bg-emerald-100">
+                Child Login
+              </Link>
+            </div>
+          </header>
+
+          <div className="mt-10 grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div>
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-2xl font-black text-emerald-700 ring-1 ring-emerald-100">
+                GC
+              </div>
+              <h1 className="mt-6 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                Guardian Registration
+              </h1>
+              <p className="mt-4 max-w-md text-lg font-bold leading-8 text-slate-500">
+                Create access to the Guardian Console and monitor your child's LexiLand journey.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="rounded-[2rem] bg-white/85 p-5 shadow-sm ring-1 ring-emerald-100 sm:p-6">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-black text-slate-700">Full Name</label>
+                  <input className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-bold outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100" name="fullName" value={formData.fullName} onChange={handleChange} required placeholder="Guardian name" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-black text-slate-700">Email Address</label>
+                  <input className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-bold outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100" type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="guardian@example.com" />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-black text-slate-700">Password</label>
+                  <input className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-bold outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100" type="password" name="password" value={formData.password} onChange={handleChange} required placeholder="Minimum 8 characters" />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-black text-slate-700">Plan</label>
+                  <select className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-bold outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100" name="subscriptionPlan" value={formData.subscriptionPlan} onChange={handleChange}>
+                    {plans.map((plan) => (
+                      <option key={plan.value} value={plan.value}>{plan.label}: {plan.limit}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" disabled={isLoading} className="mt-6 w-full rounded-3xl bg-gradient-to-r from-emerald-700 to-teal-600 px-5 py-4 text-base font-black text-white shadow-xl shadow-emerald-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70">
+                {isLoading ? "Creating..." : "Create Guardian Account"}
+              </button>
+
+              <p className="mt-5 text-center text-sm font-bold text-slate-500">
+                Already have access?{" "}
+                <Link to="/admin/login" className="font-black text-emerald-700 hover:text-emerald-900">
+                  Guardian Console login
+                </Link>
+              </p>
+            </form>
           </div>
         </div>
-        
-        <p className="text-center mt-8 text-[10px] text-slate-600 font-black uppercase tracking-[0.4em]">Antigravity Systems &copy; 2026</p>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 

@@ -11,7 +11,7 @@
   "avg_speed": "Avg Speed",
   "digit_span": "Digit Span",
   "needs_practice": "Needs Practice:",
-  "risk_level": "Risk Level:",
+  "support_level": "Support Need:",
   "super_brain": "You have a super brain! 🧠✨",
   "prep_memory_recall": "Remember the given numbers in order",
   "prep_word_memory": "Remember these words carefully in order",
@@ -20,7 +20,7 @@
   "submit_answers": "Submit Answers!",
   "woo_hoo": "Woo-hoo! 🎉",
   "final_score_label": "Final Score",
-  "risk_level_label": "Risk Level:",
+  "support_level_label": "Support Need:",
   "practice_label": "Things to practice:",
   "play_again": "Play Again",
   "back_home": "Back Home",
@@ -29,3 +29,4 @@
   "quest": "Quest",
   "build_strong_memory": "Build strong memory!"
 }
+

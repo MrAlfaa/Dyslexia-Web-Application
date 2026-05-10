@@ -1,0 +1,76 @@
+export const LEO_ACTIVITY_THEMES = {
+  leo_first_check: {
+    title: "Leo's First Sound Check",
+    animalMessage: "Let's find your sound path!",
+    primaryColor: "#15803d",
+    secondaryColor: "#f59e0b",
+    collectible: "sound gem",
+    collectibleIcon: "Gem",
+    rewardName: "Sound Path Badge",
+    taskLabel: "Sound Check",
+  },
+  leo_first_sound_hunt: {
+    title: "First Sound Hunt",
+    animalMessage: "Let's find the first sound!",
+    primaryColor: "#16a34a",
+    secondaryColor: "#f59e0b",
+    collectible: "leaf",
+    collectibleIcon: "Leaf",
+    rewardName: "First Sound Badge",
+    taskLabel: "First Sound",
+  },
+  leo_echo_roar: {
+    title: "Echo Roar",
+    animalMessage: "Listen and roar the word back!",
+    primaryColor: "#0d9488",
+    secondaryColor: "#f97316",
+    collectible: "roar gem",
+    collectibleIcon: "Gem",
+    rewardName: "Echo Roar Badge",
+    taskLabel: "Echo",
+  },
+  leo_robot_words: {
+    title: "Robot Word Safari",
+    animalMessage: "Read the funny robot words!",
+    primaryColor: "#2563eb",
+    secondaryColor: "#f59e0b",
+    collectible: "robot bolt",
+    collectibleIcon: "Bolt",
+    rewardName: "Robot Word Badge",
+    taskLabel: "Robot Word",
+  },
+  leo_sound_twins: {
+    title: "Sound Twins",
+    animalMessage: "Choose the sound twin carefully!",
+    primaryColor: "#7c3aed",
+    secondaryColor: "#f59e0b",
+    collectible: "twin shell",
+    collectibleIcon: "Shell",
+    rewardName: "Sound Twins Badge",
+    taskLabel: "Sound Twins",
+  },
+  leo_story_roar: {
+    title: "Story Roar Trail",
+    animalMessage: "Read the story with Leo!",
+    primaryColor: "#be123c",
+    secondaryColor: "#f59e0b",
+    collectible: "story scroll",
+    collectibleIcon: "Scroll",
+    rewardName: "Story Roar Badge",
+    taskLabel: "Story",
+  },
+};
+
+export const DEFAULT_LEO_THEME = {
+  title: "Leo's Sound Safari",
+  animalMessage: "Follow Leo through the jungle path!",
+  primaryColor: "#15803d",
+  secondaryColor: "#f59e0b",
+  collectible: "sound gem",
+  collectibleIcon: "Gem",
+  rewardName: "Jungle Sound Badge",
+  taskLabel: "Sound",
+};
+
+export const getLeoActivityTheme = (activityId) =>
+  LEO_ACTIVITY_THEMES[activityId] || DEFAULT_LEO_THEME;

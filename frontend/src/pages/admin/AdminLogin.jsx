@@ -1,33 +1,31 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { adminLogin } from "../../services/admin/api";
+import logo from "../../assets/lexiland/lexiland-logo.png";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    setFormData({ ...formData, [event.target.name]: event.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:5000/api/admin/login", formData);
-      
+      const response = await adminLogin(formData);
+
       if (response.data.success) {
         localStorage.setItem("adminToken", response.data.token);
         localStorage.setItem("adminUser", JSON.stringify(response.data.admin));
-        toast.success("Login successful!");
-        navigate("/admin");
+        toast.success("Login successful");
+        navigate("/admin/students");
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Login failed");
@@ -37,72 +35,127 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden font-sans">
+    <main className="premium-page min-h-screen overflow-hidden px-4 py-5 text-slate-950 sm:px-6">
       <ToastContainer position="top-right" autoClose={3000} />
-      
-      {/* Decorative Elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-600/10 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2"></div>
+      <section className="relative mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-5xl items-center justify-center">
+        <div className="absolute left-8 top-14 h-36 w-36 rounded-full bg-lime-200/45 blur-3xl" />
+        <div className="absolute bottom-12 right-10 h-40 w-40 rounded-full bg-teal-200/50 blur-3xl" />
 
-      <div className="max-w-md w-full mx-4 relative z-10 animate-fadeIn">
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-indigo-600/40">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
-          </div>
-          <h2 className="text-4xl font-black text-white tracking-tight leading-none mb-2">Admin <span className="text-indigo-400">Portal</span></h2>
-          <p className="text-slate-400 font-medium uppercase tracking-[0.3em] text-[10px]">Secure Intelligence Access</p>
-        </div>
+        <div className="premium-card grid w-full overflow-hidden rounded-[2.5rem] lg:grid-cols-[0.88fr_1.12fr]">
+          <section className="hidden bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950 p-9 text-white lg:flex lg:flex-col lg:justify-between">
+            <Link to="/" className="flex items-center gap-3">
+              <img
+                src={logo}
+                alt="LexiLand"
+                className="h-14 w-14 rounded-2xl bg-white object-cover p-1 shadow-sm"
+              />
+              <span className="text-2xl font-black tracking-tight">LexiLand</span>
+            </Link>
 
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[2.5rem] shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="admin@example.com"
-                className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 focus:bg-white/10 transition-all outline-none placeholder:text-slate-600"
-              />
+            <div className="my-12">
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-white/10 text-2xl font-black ring-1 ring-white/10">
+                GC
+              </div>
+              <h2 className="mt-7 max-w-sm text-4xl font-black leading-tight tracking-tight">
+                LexiLand Guardian Console
+              </h2>
+              <p className="mt-5 max-w-sm text-base font-bold leading-7 text-slate-300">
+                Learning support, progress, and recommendations in one calm workspace.
+              </p>
             </div>
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Secure Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="••••••••"
-                className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 focus:bg-white/10 transition-all outline-none placeholder:text-slate-600"
-              />
+
+            <div className="flex items-center gap-2">
+              {[32, 54, 42, 68, 36].map((height, index) => (
+                <span
+                  key={index}
+                  className="w-3 rounded-full bg-gradient-to-t from-teal-400 to-sky-300"
+                  style={{ height }}
+                />
+              ))}
             </div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center py-5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-600/20 text-sm font-black uppercase tracking-widest transition-all duration-300 disabled:bg-slate-700 disabled:shadow-none active:scale-[0.98]"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : "Authenticate"}
-            </button>
-          </form>
-          
-          <div className="mt-10 pt-8 border-t border-white/5 text-center">
-            <p className="text-sm text-slate-400 font-medium">
-              New system administrator?{" "}
-              <Link to="/admin/register" className="text-indigo-400 hover:text-indigo-300 font-black transition-colors ml-1">
-                Request Access
+          </section>
+
+          <section className="bg-white/86 p-6 sm:p-10 lg:p-12">
+            <nav className="mb-8 flex flex-wrap gap-3 text-sm font-extrabold">
+              <Link
+                to="/"
+                className="rounded-full bg-slate-100 px-4 py-2 text-slate-700 transition hover:bg-slate-200"
+              >
+                Back to Home
               </Link>
-            </p>
-          </div>
+              <Link
+                to="/login"
+                className="rounded-full bg-sky-50 px-4 py-2 text-sky-700 transition hover:bg-sky-100"
+              >
+                Child Login
+              </Link>
+            </nav>
+
+            <div className="mb-8">
+              <img
+                src={logo}
+                alt="LexiLand"
+                className="mb-6 h-12 w-12 rounded-2xl bg-white object-cover p-1 shadow-sm ring-1 ring-slate-100 lg:hidden"
+              />
+              <h1 className="text-4xl font-black tracking-tight text-slate-950">
+                Guardian Console
+              </h1>
+              <p className="mt-3 max-w-lg text-lg font-bold leading-8 text-slate-500">
+                Monitor your child's LexiLand journey and learning support progress.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="mb-2 block text-sm font-black text-slate-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="guardian@example.com"
+                  className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-black text-slate-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="Password"
+                  className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-3xl bg-gradient-to-r from-slate-950 to-teal-700 px-5 py-4 text-base font-black text-white shadow-xl shadow-teal-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isLoading ? "Opening..." : "Open Guardian Console"}
+              </button>
+            </form>
+
+            <div className="mt-7 text-center text-sm font-bold text-slate-500">
+              Need guardian access?{" "}
+              <Link
+                to="/admin/register"
+                className="font-black text-teal-700 transition hover:text-teal-900"
+              >
+                Register guardian account
+              </Link>
+            </div>
+          </section>
         </div>
-        
-        <p className="text-center mt-10 text-[10px] text-slate-600 font-black uppercase tracking-[0.4em]">Antigravity Systems &copy; 2026</p>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 
