@@ -32,8 +32,44 @@ ARTIFACT_VERSION = "final_speech_support_v1"
 VALID_LABELS = {"low_support", "medium_support", "high_support"}
 MIN_LABELLED_ROWS = 30
 REQUIRED_COLUMNS = {SESSION_ID_COLUMN, PARTICIPANT_COLUMN, LABEL_COLUMN}
+APPROVED_TRAINING_INPUT_COLUMNS = {
+    "activity_id",
+    "common_phoneme_error_pattern",
+    "completed_at",
+    "consonant_cluster_error_rate",
+    "created_at",
+    "dataset_ready",
+    "final_sound_error_rate",
+    "grade",
+    "initial_sound_error_rate",
+    "invalid_attempts",
+    "is_dummy_data",
+    "label_confidence",
+    "labelled_attempt_count",
+    LABEL_COLUMN,
+    "mean_audio_quality_score",
+    "mean_character_error_rate",
+    "mean_partial_match_score",
+    "mean_pause_count",
+    "mean_phoneme_error_rate",
+    "mean_pronunciation_model_score",
+    "mean_speech_duration_sec",
+    "mean_word_error_rate",
+    "mode",
+    PARTICIPANT_COLUMN,
+    "pseudoword_accuracy",
+    "retry_rate",
+    SESSION_ID_COLUMN,
+    "sentence_accuracy",
+    "status",
+    "total_attempts",
+    "valid_attempts",
+    "vowel_mismatch_rate",
+    "word_accuracy",
+}
 PROHIBITED_DIRECT_IDENTIFIER_COLUMNS = {
     "address",
+    "child_phone_number",
     "email",
     "full_name",
     "guardian_email",
@@ -45,9 +81,21 @@ PROHIBITED_DIRECT_IDENTIFIER_COLUMNS = {
     "parent_phone",
     "phone",
     "student_id",
+    "student_email",
     "student_name",
     "student_username",
 }
+NON_FEATURE_COLUMNS = {
+    "completed_at",
+    "created_at",
+    "dataset_ready",
+    "is_dummy_data",
+    "label_confidence",
+    LABEL_COLUMN,
+    PARTICIPANT_COLUMN,
+    SESSION_ID_COLUMN,
+    "status",
+}.union(PROHIBITED_DIRECT_IDENTIFIER_COLUMNS)
 DEIDENTIFICATION_PREPARATION_MESSAGE = (
     "The de-identified training input must be prepared with participant_code "
     "and prohibited identifier columns removed."
@@ -73,13 +121,23 @@ def validate_training_data(data: pd.DataFrame) -> pd.DataFrame:
         for column in data.columns
         if str(column).strip().lower() in PROHIBITED_DIRECT_IDENTIFIER_COLUMNS
     )
-    if missing_columns or prohibited_columns:
+    unknown_columns = sorted(
+        str(column)
+        for column in data.columns
+        if column not in APPROVED_TRAINING_INPUT_COLUMNS
+    )
+    if missing_columns or prohibited_columns or unknown_columns:
         issues = []
         if missing_columns:
             issues.append(f"missing required columns: {', '.join(missing_columns)}")
         if prohibited_columns:
             issues.append(
                 "prohibited direct-identifier columns: " + ", ".join(prohibited_columns)
+            )
+        if unknown_columns:
+            issues.append(
+                "unknown columns not allowed by the session training contract: "
+                + ", ".join(unknown_columns)
             )
         raise ValueError(
             "Training data cannot be used because it contains "
@@ -164,29 +222,18 @@ def load_session_features(path="session_features.csv"):
 
 
 def build_feature_table(data):
-    excluded = {
-        "session_id",
-        "student_id",
-        "student_username",
-        "status",
-        "created_at",
-        "completed_at",
-        LABEL_COLUMN,
-        PARTICIPANT_COLUMN,
-        "is_dummy_data",
-        "dataset_ready",
-    }
+    validated = validate_training_data(data)
     numeric_columns = []
-    for column in data.columns:
-        if column in excluded:
+    for column in validated.columns:
+        if column in NON_FEATURE_COLUMNS:
             continue
-        converted = pd.to_numeric(data[column], errors="coerce")
+        converted = pd.to_numeric(validated[column], errors="coerce")
         if converted.notna().any():
-            data[column] = converted.fillna(0)
+            validated[column] = converted.fillna(0)
             numeric_columns.append(column)
     if not numeric_columns:
         raise ValueError("No numeric feature columns found.")
-    return data[numeric_columns].fillna(0), numeric_columns
+    return validated[numeric_columns].fillna(0), numeric_columns
 
 
 def train_and_select_model(x_train, y_train, x_test, y_test):

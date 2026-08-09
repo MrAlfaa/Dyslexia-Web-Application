@@ -44,6 +44,19 @@ class TrainingDataContractTests(unittest.TestCase):
                 ):
                     trainer.validate_training_data(data)
 
+    def test_rejects_unapproved_columns_before_feature_construction(self):
+        for column, value in (
+            ("child_phone_number", "0771234567"),
+            ("student_email", "child@example.com"),
+            ("unapproved_numeric_feature", 99),
+        ):
+            with self.subTest(column=column):
+                data = self.valid_data()
+                data[column] = value
+
+                with self.assertRaisesRegex(ValueError, "not allowed by the session training contract"):
+                    trainer.build_feature_table(data)
+
     def test_rejects_duplicate_session_ids(self):
         data = self.valid_data()
         data.loc[1, "session_id"] = data.loc[0, "session_id"]
