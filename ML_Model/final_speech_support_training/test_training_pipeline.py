@@ -26,8 +26,23 @@ class TrainingDataContractTests(unittest.TestCase):
     def test_rejects_missing_participant_code_column(self):
         data = self.valid_data().drop(columns="participant_code")
 
-        with self.assertRaisesRegex(ValueError, "participant_code"):
+        with self.assertRaisesRegex(
+            ValueError,
+            "de-identified training input must be prepared with participant_code and prohibited identifier columns removed",
+        ):
             trainer.validate_training_data(data)
+
+    def test_rejects_prohibited_direct_identifier_columns(self):
+        for column in ("student_id", "student_username"):
+            with self.subTest(column=column):
+                data = self.valid_data()
+                data[column] = "direct-identifier"
+
+                with self.assertRaisesRegex(
+                    ValueError,
+                    f"prohibited direct-identifier columns: {column}",
+                ):
+                    trainer.validate_training_data(data)
 
     def test_rejects_duplicate_session_ids(self):
         data = self.valid_data()
@@ -83,6 +98,17 @@ class TrainingDataContractTests(unittest.TestCase):
         self.assertTrue(test_participants)
         self.assertFalse(train_participants.intersection(test_participants))
         self.assertEqual(len(train_data) + len(test_data), 30)
+
+    def test_rejects_grouped_split_without_evaluation_class_coverage(self):
+        data = self.valid_data()
+        labels = ["low_support", "medium_support", "high_support"]
+        data["speech_support_label"] = [labels[index // 10] for index in range(len(data))]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Grouped split evaluation partition is missing support classes",
+        ):
+            trainer.split_by_participant(data)
 
 
 if __name__ == "__main__":

@@ -32,6 +32,26 @@ ARTIFACT_VERSION = "final_speech_support_v1"
 VALID_LABELS = {"low_support", "medium_support", "high_support"}
 MIN_LABELLED_ROWS = 30
 REQUIRED_COLUMNS = {SESSION_ID_COLUMN, PARTICIPANT_COLUMN, LABEL_COLUMN}
+PROHIBITED_DIRECT_IDENTIFIER_COLUMNS = {
+    "address",
+    "email",
+    "full_name",
+    "guardian_email",
+    "guardian_name",
+    "guardian_phone",
+    "name",
+    "parent_email",
+    "parent_name",
+    "parent_phone",
+    "phone",
+    "student_id",
+    "student_name",
+    "student_username",
+}
+DEIDENTIFICATION_PREPARATION_MESSAGE = (
+    "The de-identified training input must be prepared with participant_code "
+    "and prohibited identifier columns removed."
+)
 
 
 def _is_dummy_value(value):
@@ -48,8 +68,25 @@ def validate_training_data(data: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("Training data must be provided as a pandas DataFrame.")
 
     missing_columns = sorted(REQUIRED_COLUMNS.difference(data.columns))
-    if missing_columns:
-        raise ValueError(f"Missing required training columns: {', '.join(missing_columns)}")
+    prohibited_columns = sorted(
+        column
+        for column in data.columns
+        if str(column).strip().lower() in PROHIBITED_DIRECT_IDENTIFIER_COLUMNS
+    )
+    if missing_columns or prohibited_columns:
+        issues = []
+        if missing_columns:
+            issues.append(f"missing required columns: {', '.join(missing_columns)}")
+        if prohibited_columns:
+            issues.append(
+                "prohibited direct-identifier columns: " + ", ".join(prohibited_columns)
+            )
+        raise ValueError(
+            "Training data cannot be used because it contains "
+            + "; ".join(issues)
+            + ". "
+            + DEIDENTIFICATION_PREPARATION_MESSAGE
+        )
 
     validated = data.copy()
     if "is_dummy_data" in validated.columns and validated["is_dummy_data"].map(_is_dummy_value).any():
@@ -101,6 +138,23 @@ def split_by_participant(data, test_size=0.25, random_state=42):
     overlap = set(train_data[PARTICIPANT_COLUMN]).intersection(test_data[PARTICIPANT_COLUMN])
     if overlap:
         raise AssertionError(f"Participant overlap detected in grouped split: {sorted(overlap)}")
+
+    expected_labels = set(validated[LABEL_COLUMN])
+    missing_from_train = sorted(expected_labels.difference(train_data[LABEL_COLUMN]))
+    missing_from_test = sorted(expected_labels.difference(test_data[LABEL_COLUMN]))
+    coverage_errors = []
+    if missing_from_train:
+        coverage_errors.append(
+            "Grouped split training partition is missing support classes: "
+            + ", ".join(missing_from_train)
+        )
+    if missing_from_test:
+        coverage_errors.append(
+            "Grouped split evaluation partition is missing support classes: "
+            + ", ".join(missing_from_test)
+        )
+    if coverage_errors:
+        raise ValueError("; ".join(coverage_errors))
     return train_data, test_data
 
 
@@ -186,10 +240,10 @@ def get_feature_importance(model, feature_columns):
 
 def main():
     data = load_session_features()
-    x, feature_columns = build_feature_table(data)
     encoder = LabelEncoder()
     encoder.fit(data[LABEL_COLUMN])
     train_data, test_data = split_by_participant(data)
+    x, feature_columns = build_feature_table(data)
     x_train = x.loc[train_data.index]
     x_test = x.loc[test_data.index]
     y_train = encoder.transform(train_data[LABEL_COLUMN])
