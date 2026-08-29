@@ -30,6 +30,9 @@ const {
 const { getLeoActivityAccess } = require("../services/leoActivityAccess.service");
 const { getLeoAttemptProgress } = require("../services/leoAttemptProgress.service");
 const {
+  buildLeoImprovementAttemptPolicy,
+} = require("../services/leoImprovementAttemptPolicy.service");
+const {
   getActivityAward,
   mergeActivityProgress,
 } = require("../services/leoActivityProgress.service");
@@ -1405,8 +1408,6 @@ exports.submitImprovementAttempt = async (req, res) => {
       sessionId,
       activityId,
       promptId,
-      taskType,
-      targetText,
       attemptNo,
       audioDurationMs,
       selectedAnswer,
@@ -1421,6 +1422,19 @@ exports.submitImprovementAttempt = async (req, res) => {
     if (!activity || !prompt) {
       return res.status(400).json({ success: false, message: "Unknown Leo activity prompt" });
     }
+
+    const attemptPolicy = buildLeoImprovementAttemptPolicy({
+      prompt,
+      attemptPhase: "training",
+      selectedAnswer,
+    });
+    const {
+      isSelection,
+      taskType: resolvedTaskType,
+      targetText: resolvedTargetText,
+      targetPhonemes: resolvedTargetPhonemes,
+      expectedAnswer,
+    } = attemptPolicy;
 
     const session = await SpeechSession.findOne({
       _id: sessionId,
@@ -1441,7 +1455,6 @@ exports.submitImprovementAttempt = async (req, res) => {
       attemptNo,
     });
     const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs);
-    const isSelection = selectedAnswer !== undefined;
     const allowPlaceholderAudio =
       !req.file &&
       !isSelection &&
@@ -1453,17 +1466,15 @@ exports.submitImprovementAttempt = async (req, res) => {
       audioAnalysis,
       audioDurationMs: audioDurationMs || (isSelection ? 900 : 1200),
       attemptNo,
-      taskType: taskType || prompt.taskType,
+      taskType: resolvedTaskType,
       promptId,
-      targetText: targetText || prompt.targetText,
-      targetPhonemes: parseJsonArray(req.body.targetPhonemes).length
-        ? parseJsonArray(req.body.targetPhonemes)
-        : prompt.targetPhonemes || [],
+      targetText: resolvedTargetText,
+      targetPhonemes: resolvedTargetPhonemes,
       skill: activity.skill,
       mode: "improvement",
       allowPlaceholderAudio,
-      selectedAnswer,
-      expectedAnswer: getExpectedAnswer(prompt),
+      selectedAnswer: attemptPolicy.selectedAnswer,
+      expectedAnswer,
     });
     const itemResult = createItemResult(features);
     const promptIndex = getActivityPrompts(activityId).findIndex((item) => item.promptId === promptId);
@@ -1491,12 +1502,12 @@ exports.submitImprovementAttempt = async (req, res) => {
       studentId: req.user.id,
       activityId,
       promptId,
-      taskType: taskType || prompt.taskType,
-      targetText: targetText || prompt.targetText,
+      taskType: resolvedTaskType,
+      targetText: resolvedTargetText,
       gameType: activity.gameType,
-      selectedAnswer: selectedAnswer || "",
-      selectedCorrect: isSelection ? features.wordCorrectPlaceholder : undefined,
-      targetPhonemes: prompt.targetPhonemes || [],
+      selectedAnswer: attemptPolicy.selectedAnswer,
+      selectedCorrect: attemptPolicy.selectedCorrect,
+      targetPhonemes: resolvedTargetPhonemes,
       attemptNo,
       audioOriginalName: savedFile?.originalname || "",
       audioMimeType: savedFile?.mimetype || "",
