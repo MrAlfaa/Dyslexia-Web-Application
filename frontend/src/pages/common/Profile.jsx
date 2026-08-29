@@ -1,23 +1,47 @@
-import { useState, useEffect } from "react";
-import { getStudentProfile, updateStudentProfile } from "../../services/student/api";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  Camera,
+  CheckCircle2,
+  LogOut,
+  MapPin,
+  School,
+  Sparkles,
+  Star,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import Toast from "../../components/ui/Toast";
+import { getStudentProfile, updateStudentProfile } from "../../services/student/api";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
+import Toast from "../../components/ui/Toast";
+import leo from "../../assets/lexiland/leo-lion.webp";
+import logo from "../../assets/lexiland/lexiland-logo.webp";
+
+const leoActivityTitleKeys = {
+  leo_first_sound_hunt: "profile_activity_first_sound_hunt",
+  leo_echo_roar: "profile_activity_echo_roar",
+  leo_robot_words: "profile_activity_robot_words",
+  leo_sound_twins: "profile_activity_sound_twins",
+  leo_story_roar: "profile_activity_story_roar",
+};
+
+const createEmptyProfile = () => ({
+  fullName: "",
+  email: "",
+  grade: "",
+  gender: "",
+  school: "",
+  profilePhoto: "",
+  lexilandProgress: {},
+});
 
 function Profile() {
   const navigate = useNavigate();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation("common");
+  const photoInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState({
-    fullName: "",
-    email: "",
-    grade: "",
-    gender: "",
-    school: "",
-    profilePhoto: "",
-  });
+  const [profile, setProfile] = useState(createEmptyProfile);
   const [initialProfile, setInitialProfile] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
 
@@ -28,62 +52,79 @@ function Profile() {
     navigate("/");
   };
 
-  const hasChanges = initialProfile && (
-    profile.fullName !== initialProfile.fullName ||
-    profile.grade !== initialProfile.grade ||
-    profile.gender !== initialProfile.gender ||
-    profile.school !== initialProfile.school ||
-    profile.profilePhoto !== initialProfile.profilePhoto
+  const hasChanges = Boolean(
+    initialProfile &&
+      (profile.fullName !== initialProfile.fullName ||
+        profile.grade !== initialProfile.grade ||
+        profile.gender !== initialProfile.gender ||
+        profile.school !== initialProfile.school ||
+        profile.profilePhoto !== initialProfile.profilePhoto),
   );
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const res = await getStudentProfile();
-      const data = {
-        fullName: res.data.fullName || "",
-        email: res.data.email || "",
-        grade: res.data.grade || "",
-        gender: res.data.gender || "",
-        school: res.data.school || "",
-        profilePhoto: res.data.profilePhoto || "",
-      };
-      setProfile(data);
-      setInitialProfile(data);
-    } catch (err) {
-      console.error("Error fetching profile:", err);
-      setToast({ show: true, message: t("failed_load_profile"), type: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (e) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Check file size (optional but recommended)
-      if (file.size > 5 * 1024 * 1024) {
-        setToast({ show: true, message: t("file_too_large"), type: "error" });
-        return;
+    const fetchProfile = async () => {
+      try {
+        const res = await getStudentProfile();
+        const data = {
+          fullName: res.data.fullName || "",
+          email: res.data.email || "",
+          grade: res.data.grade || "",
+          gender: res.data.gender || "",
+          school: res.data.school || "",
+          profilePhoto: res.data.profilePhoto || "",
+          lexilandProgress: res.data.lexilandProgress || {},
+        };
+        setProfile(data);
+        setInitialProfile(data);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        setToast({ show: true, message: t("failed_load_profile"), type: "error" });
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfile({ ...profile, profilePhoto: reader.result });
-      };
-      reader.readAsDataURL(file);
-    }
+    fetchProfile();
+  }, [t]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setProfile((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setToast({ show: true, message: t("profile_image_only"), type: "error" });
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ show: true, message: t("file_too_large"), type: "error" });
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfile((current) => ({ ...current, profilePhoto: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const openPhotoPickerFromKeyboard = (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    photoInputRef.current?.click();
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!hasChanges || saving) return;
+
     setSaving(true);
     try {
       await updateStudentProfile({
@@ -95,12 +136,12 @@ function Profile() {
       });
       setInitialProfile({ ...profile });
       setToast({ show: true, message: t("profile_updated_success"), type: "success" });
-    } catch (err) {
-      console.error("Error updating profile:", err);
-      setToast({ 
-        show: true, 
-        message: err.response?.data?.message || "Failed to update profile.", 
-        type: "error" 
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      setToast({
+        show: true,
+        message: error.response?.data?.message || t("failed_update_profile"),
+        type: "error",
       });
     } finally {
       setSaving(false);
@@ -109,198 +150,277 @@ function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-      </div>
+      <main className="flex min-h-screen items-center justify-center bg-[#f4faf7]" aria-busy="true">
+        <div className="flex flex-col items-center gap-4" role="status">
+          <div className="h-11 w-11 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-700 motion-reduce:animate-none" />
+          <span className="font-semibold text-slate-600">{t("profile_loading")}</span>
+        </div>
+      </main>
     );
   }
 
+  const speech = profile.lexilandProgress?.speech || {};
+  const speechStatus = speech.identificationStatus || "not_started";
+  const speechStatusText =
+    speechStatus === "completed"
+      ? t("completed")
+      : speechStatus === "in_progress"
+        ? t("in_progress")
+        : t("not_started");
+  const activityTitleKey = leoActivityTitleKeys[speech.currentActivityId];
+  const nextLeoActivity = activityTitleKey
+    ? t(activityTitleKey)
+    : t("profile_activity_sound_practice");
+  const stars = Number(speech.stars ?? speech.totalStars ?? 0) || 0;
+  const summaryItems = [
+    {
+      icon: <Sparkles aria-hidden="true" size={18} strokeWidth={2.3} />,
+      label: t("profile_summary_grade"),
+      value: profile.grade ? `${t("grade")} ${profile.grade}` : t("not_set"),
+    },
+    {
+      icon: <School aria-hidden="true" size={18} strokeWidth={2.3} />,
+      label: t("profile_summary_school"),
+      value: profile.school || t("profile_no_school"),
+    },
+    {
+      icon: <Star aria-hidden="true" size={18} strokeWidth={2.3} />,
+      label: t("profile_summary_stars"),
+      value: stars,
+    },
+    {
+      icon: <CheckCircle2 aria-hidden="true" size={18} strokeWidth={2.3} />,
+      label: t("profile_summary_leo_status"),
+      value: speechStatusText,
+    },
+    {
+      icon: <MapPin aria-hidden="true" size={18} strokeWidth={2.3} />,
+      label: t("profile_summary_next_activity"),
+      value: nextLeoActivity,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Navigation */}
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="mb-8 flex items-center text-indigo-600 hover:text-indigo-800 transition-colors font-medium"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          {t("back_to_dashboard")}
-        </button>
-
-        <div className="flex justify-end mb-4">
+    <main className="child-game-shell min-h-screen bg-[#f4faf7] text-slate-950">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-12 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+        <nav className="mb-5 flex min-h-12 items-center justify-between gap-3" aria-label={t("profile_navigation")}>
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard")}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-emerald-200 bg-white px-4 text-sm font-extrabold text-emerald-900 shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200"
+          >
+            <ArrowLeft aria-hidden="true" size={19} strokeWidth={2.5} />
+            <span>{t("back_to_dashboard")}</span>
+          </button>
           <LanguageSwitcher />
-        </div>
+        </nav>
 
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-indigo-100">
-          <div className="md:flex">
-            {/* Sidebar / Photo Section */}
-            <div className="md:w-1/3 bg-indigo-600 p-8 flex flex-col items-center justify-center text-white">
-              <div className="relative group">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl bg-indigo-500 flex items-center justify-center">
-                  {profile.profilePhoto ? (
-                    <img
-                      src={profile.profilePhoto}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src = "https://ui-avatars.com/api/?name=" + profile.fullName + "&background=random";
-                      }}
-                    />
-                  ) : (
-                    <span className="text-4xl font-bold">
-                      {profile.fullName?.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                {/* Upload Button overlay */}
-                <label className="absolute bottom-0 right-0 bg-white text-indigo-600 p-2 rounded-full shadow-lg cursor-pointer hover:bg-indigo-50 transition-colors border border-indigo-100">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileChange}
+        <section
+          data-profile-region="identity"
+          className="relative isolate overflow-hidden rounded-lg bg-[#064e3b] px-5 py-7 text-white shadow-[0_18px_50px_rgba(6,78,59,0.18)] sm:px-8 lg:px-10"
+        >
+          <div className="relative z-10 grid items-center gap-6 md:grid-cols-[auto_1fr_180px]">
+            <div className="relative mx-auto md:mx-0">
+              <div className="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-lg border-4 border-amber-200 bg-emerald-700 shadow-lg sm:h-36 sm:w-36">
+                <span className="text-5xl font-extrabold" aria-hidden="true">
+                  {profile.fullName?.charAt(0).toUpperCase() || "L"}
+                </span>
+                {profile.profilePhoto ? (
+                  <img
+                    src={profile.profilePhoto}
+                    alt={t("profile_photo")}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    onError={(event) => {
+                      event.currentTarget.hidden = true;
+                    }}
                   />
-                </label>
+                ) : null}
               </div>
-              <h2 className="mt-6 text-2xl font-bold text-center">{profile.fullName}</h2>
-              <p className="mt-2 text-indigo-100 opacity-80">{profile.email}</p>
-              <div className="mt-4 px-4 py-1 bg-white/20 rounded-full text-sm font-semibold uppercase tracking-widest">
-                {profile.grade ? `${t("grade")} ${profile.grade}` : t("not_set")}
-              </div>
-
-              {/* Logout Button */}
-              <button
-                onClick={handleLogout}
-                className="mt-12 flex items-center text-indigo-100 hover:text-white transition-all font-bold text-sm bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl border border-white/20"
+              <label
+                htmlFor="profile-photo-input"
+                role="button"
+                tabIndex={0}
+                onKeyDown={openPhotoPickerFromKeyboard}
+                className="absolute -bottom-3 -right-3 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg bg-amber-300 px-3 text-sm font-extrabold text-amber-950 shadow-md ring-4 ring-[#064e3b] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200"
+                aria-label={t("profile_photo_action")}
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+                <Camera aria-hidden="true" size={18} strokeWidth={2.5} />
+                <span className="hidden sm:inline">{t("upload_photo")}</span>
+              </label>
+              <input
+                ref={photoInputRef}
+                id="profile-photo-input"
+                type="file"
+                tabIndex={-1}
+                className="sr-only"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+            </div>
+
+            <div className="min-w-0 text-center md:text-left">
+              <div className="mb-4 inline-flex items-center gap-3 rounded-lg bg-white px-3 py-2 text-[#064e3b]">
+                <img src={logo} alt="" className="h-9 w-9 rounded-md object-cover" aria-hidden="true" />
+                <span className="text-lg font-extrabold">LexiLand</span>
+              </div>
+              <h1 className="break-words text-3xl font-extrabold leading-tight sm:text-4xl">
+                {profile.fullName || t("not_set")}
+              </h1>
+              <p className="mt-2 text-base font-semibold text-emerald-100">
+                {t("profile_identity_subtitle", {
+                  grade: profile.grade || t("not_set"),
+                })}
+              </p>
+              <p className="mt-3 break-all text-sm text-emerald-100/85">
+                {profile.email || t("readonly_email")}
+              </p>
+            </div>
+
+            <img
+              src={leo}
+              alt={t("profile_leo_alt")}
+              className="mx-auto hidden max-h-44 w-auto object-contain md:block"
+            />
+          </div>
+        </section>
+
+        <section
+          data-profile-region="summary"
+          className="mt-8 border-y border-slate-200 bg-white/60"
+          aria-labelledby="profile-summary-title"
+        >
+          <h2 id="profile-summary-title" className="sr-only">{t("profile_summary")}</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5">
+            {summaryItems.map(({ icon, label, value }, index) => (
+              <div
+                key={label}
+                className={`min-w-0 px-4 py-5 ${
+                  index > 0 ? "border-t border-slate-200 sm:border-l lg:border-t-0" : ""
+                } ${index === 2 ? "sm:border-l-0 lg:border-l" : ""} ${
+                  index === 4 ? "sm:col-span-2 lg:col-span-1" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2 text-emerald-800">
+                  {icon}
+                  <p className="text-xs font-bold text-slate-500">{label}</p>
+                </div>
+                <p className="mt-2 break-words text-base font-extrabold text-slate-900">{value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section data-profile-region="edit" className="mx-auto mt-10 max-w-4xl" aria-labelledby="profile-edit-title">
+          <div className="mb-6">
+            <p className="text-sm font-bold text-emerald-700">{t("profile_learning_card")}</p>
+            <h2 id="profile-edit-title" className="mt-1 text-2xl font-extrabold text-slate-950 sm:text-3xl">
+              {t("profile_account_card")}
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600">
+              {t("profile_form_hint")}
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="grid gap-x-5 gap-y-6 md:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-700">{t("full_name")}</span>
+              <input
+                type="text"
+                name="fullName"
+                value={profile.fullName}
+                onChange={handleChange}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-4 text-base text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
+                placeholder={t("enter_full_name")}
+                required
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-bold text-slate-700">{t("email_address")}</span>
+              <input
+                type="email"
+                value={profile.email}
+                readOnly
+                className="mt-2 min-h-11 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-4 text-base text-slate-500 outline-none"
+                aria-describedby="profile-email-hint"
+              />
+              <span id="profile-email-hint" className="mt-1 block text-xs font-medium text-slate-500">
+                {t("readonly_email")}
+              </span>
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-bold text-slate-700">{t("grade")}</span>
+              <select
+                name="grade"
+                value={profile.grade}
+                onChange={handleChange}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-4 text-base text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
+                required
+              >
+                <option value="" disabled>{t("select_grade")}</option>
+                {[2, 3, 4, 5].map((grade) => (
+                  <option key={grade} value={String(grade)}>{t("grade")} {grade}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-bold text-slate-700">{t("gender")}</span>
+              <select
+                name="gender"
+                value={profile.gender}
+                onChange={handleChange}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-4 text-base text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
+              >
+                <option value="">{t("not_set")}</option>
+                <option value="male">{t("male")}</option>
+                <option value="female">{t("female")}</option>
+                <option value="other">{t("other")}</option>
+              </select>
+            </label>
+
+            <label className="block md:col-span-2">
+              <span className="text-sm font-bold text-slate-700">{t("school")}</span>
+              <input
+                type="text"
+                name="school"
+                value={profile.school}
+                onChange={handleChange}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-4 text-base text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
+                placeholder={t("enter_school_name")}
+              />
+            </label>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 md:col-span-2 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-5 text-sm font-extrabold text-rose-700 transition hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-100"
+              >
+                <LogOut aria-hidden="true" size={18} strokeWidth={2.4} />
                 {t("logout_account")}
               </button>
+              <button
+                type="submit"
+                disabled={saving || !hasChanges}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-700 px-6 text-base font-extrabold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+              >
+                {saving ? t("saving_changes") : t("save_profile_changes")}
+              </button>
             </div>
-
-            {/* Main Form Section */}
-            <div className="md:w-2/3 p-8 md:p-12">
-              <h3 className="text-2xl font-bold text-gray-900 mb-8">{t("hello_this_is_profile")}</h3>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t("full_name")}</label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={profile.fullName}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-800 bg-gray-50/50"
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-
-                {/* Email - READONLY */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t("email_address")}</label>
-                  <input
-                    type="email"
-                    value={profile.email}
-                    readOnly
-                    className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-100 text-gray-500 cursor-not-allowed outline-none"
-                  />
-                </div>
-
-                {/* Grade */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t("grade")}</label>
-                  <select
-                    name="grade"
-                    value={profile.grade}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-800 bg-gray-50/50 appearance-none"
-                    required
-                  >
-                    <option value="" disabled>{t("select_grade")}</option>
-                    <option value="2">{t("grade")} 2</option>
-                    <option value="3">{t("grade")} 3</option>
-                    <option value="4">{t("grade")} 4</option>
-                  </select>
-                </div>
-                
-                {/* Gender */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t("gender")}</label>
-                  <select
-                    name="gender"
-                    value={profile.gender}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-800 bg-gray-50/50 appearance-none"
-                  >
-                    <option value="">{t("not_set")}</option>
-                    <option value="male">{t("male")}</option>
-                    <option value="female">{t("female")}</option>
-                    <option value="other">{t("other")}</option>
-                  </select>
-                </div>
-
-                {/* School */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t("school")}</label>
-                  <input
-                    type="text"
-                    name="school"
-                    value={profile.school}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-800 bg-gray-50/50"
-                    placeholder="Enter your school name"
-                  />
-                </div>
-
-
-                {/* Submit Button */}
-                <div className="pt-4">
-                  <button
-                    type="submit"
-                    disabled={saving || !hasChanges}
-                    className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-all active:scale-95 ${
-                      saving || !hasChanges
-                        ? "bg-gray-400 cursor-not-allowed grayscale opacity-70" 
-                        : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:-translate-y-1 shadow-indigo-200"
-                    }`}
-                  >
-                    {saving ? (
-                      <span className="flex items-center justify-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        {t("saving_changes")}
-                      </span>
-                    ) : (
-                      t("save_profile_changes")
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+          </form>
+        </section>
       </div>
-      
-      {toast.show && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast({ ...toast, show: false })} 
+
+      {toast.show ? (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast((current) => ({ ...current, show: false }))}
         />
-      )}
-    </div>
+      ) : null}
+    </main>
   );
 }
 
