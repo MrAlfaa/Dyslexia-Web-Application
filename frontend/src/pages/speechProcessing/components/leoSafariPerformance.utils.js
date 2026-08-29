@@ -25,15 +25,47 @@ export function getSafariRenderSettings({
   recording = false,
   active = true,
 } = {}) {
-  const lowQuality = quality === "low";
+  const lowQuality = quality === "low" || recording;
   const paused = recording || !active;
 
   return {
-    antialias: !lowQuality,
     dpr: lowQuality ? 1 : [1, 1.5],
     effects: !lowQuality,
     frameloop: lowQuality || paused ? "demand" : "always",
-    powerPreference: lowQuality ? "low-power" : "high-performance",
-    shadows: !lowQuality && !recording,
+    shadows: !lowQuality,
+  };
+}
+
+export function readSafariCapabilities({
+  browserWindow = globalThis.window,
+  browserDocument = globalThis.document,
+  browserNavigator = globalThis.navigator,
+} = {}) {
+  if (!browserWindow || !browserDocument) {
+    return {
+      webgl: false,
+      reducedMotion: true,
+      deviceMemory: undefined,
+      viewportWidth: 0,
+    };
+  }
+
+  let webgl = false;
+  try {
+    const canvas = browserDocument.createElement("canvas");
+    webgl = Boolean(
+      browserWindow.WebGLRenderingContext &&
+        (canvas.getContext("webgl2") || canvas.getContext("webgl"))
+    );
+  } catch {
+    webgl = false;
+  }
+
+  return {
+    webgl,
+    reducedMotion:
+      browserWindow.matchMedia?.("(prefers-reduced-motion: reduce)").matches || false,
+    deviceMemory: browserNavigator?.deviceMemory,
+    viewportWidth: browserWindow.innerWidth,
   };
 }

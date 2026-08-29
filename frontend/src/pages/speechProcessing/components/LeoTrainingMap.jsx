@@ -3,7 +3,10 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle2, LockKeyhole, MapPin, RotateCcw, Star } from "lucide-react";
 import leoImage from "../../../assets/lexiland/leo-lion.webp";
 import trainingBackground from "../../../assets/lexiland/leo-training-map-bg.webp";
-import { getSafariQuality } from "./leoSafariPerformance.utils";
+import {
+  getSafariQuality,
+  readSafariCapabilities,
+} from "./leoSafariPerformance.utils";
 import { buildSafariPresentation } from "./leoSafariPresentation.utils";
 
 const LeoSafari3DMap = lazy(() => import("./LeoSafari3DMap"));
@@ -13,33 +16,6 @@ const getStateIcon = (zone) => {
   if (zone.state === "replay") return RotateCcw;
   if (zone.isPrimary) return MapPin;
   return CheckCircle2;
-};
-
-const supportsWebGL = () => {
-  if (typeof document === "undefined") return false;
-
-  try {
-    const canvas = document.createElement("canvas");
-    return Boolean(
-      window.WebGLRenderingContext &&
-        (canvas.getContext("webgl2") || canvas.getContext("webgl"))
-    );
-  } catch {
-    return false;
-  }
-};
-
-const readSafariCapabilities = () => {
-  if (typeof window === "undefined") {
-    return { webgl: false, reducedMotion: true, deviceMemory: undefined, viewportWidth: 0 };
-  }
-
-  return {
-    webgl: supportsWebGL(),
-    reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || false,
-    deviceMemory: navigator.deviceMemory,
-    viewportWidth: window.innerWidth,
-  };
 };
 
 function LeoSafari2DFallback({

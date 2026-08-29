@@ -14,9 +14,55 @@ import LeoGuide from "./components/LeoGuide";
 import LeoRewardModal from "./components/LeoRewardModal";
 import LeoSafariActivityTray from "./components/LeoSafariActivityTray";
 import LeoSafariHud from "./components/LeoSafariHud";
+import {
+  getSafariQuality,
+  readSafariCapabilities,
+} from "./components/leoSafariPerformance.utils";
 import { buildSafariPresentation } from "./components/leoSafariPresentation.utils";
 
 const LeoSafari3DMap = lazy(() => import("./components/LeoSafari3DMap"));
+
+function LeoSafariFallbackMap({ zones, focusedActivityId, t }) {
+  return (
+    <div
+      className="relative h-full w-full bg-cover bg-center"
+      style={{ backgroundImage: `url(${trainingBg})` }}
+      role="group"
+      aria-label={t("training_map_heading")}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/25 via-emerald-900/10 to-emerald-950/80" />
+      <div className="absolute inset-x-3 bottom-32 grid grid-cols-2 gap-2 sm:inset-x-6 sm:bottom-40 sm:grid-cols-5">
+        {zones.map((zone, index) => {
+          const stateLabel = t(zone.stateLabelKey);
+          const isFocused = focusedActivityId === zone.activityId;
+
+          return (
+            <article
+              key={`${zone.activityId || "unknown"}-live-fallback-${index}`}
+              className={`min-w-0 rounded-lg border p-2 shadow-lg ${
+                isFocused
+                  ? "border-amber-300 bg-amber-50 ring-2 ring-amber-300"
+                  : "border-white/30 bg-white/95"
+              }`}
+              aria-label={`${zone.shortTitle || zone.title}. ${stateLabel}`}
+              aria-current={isFocused ? "step" : undefined}
+            >
+              <span className="block text-[0.65rem] font-black uppercase text-emerald-700 sm:text-xs">
+                {t("zone_number", { number: index + 1 })}
+              </span>
+              <span className="mt-1 block truncate text-xs font-black text-slate-950 sm:text-sm">
+                {zone.shortTitle || zone.title}
+              </span>
+              <span className="mt-1 block truncate text-[0.65rem] font-bold text-slate-600 sm:text-xs">
+                {stateLabel}
+              </span>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function LeoTrainingSafari() {
   const navigate = useNavigate();
@@ -36,6 +82,7 @@ function LeoTrainingSafari() {
   const [reward, setReward] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [safariCapabilities, setSafariCapabilities] = useState(readSafariCapabilities);
   const devUnlock = import.meta.env.VITE_LEXILAND_DEV_UNLOCK === "true";
 
   const load = useCallback(async () => {
@@ -78,6 +125,21 @@ function LeoTrainingSafari() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const motionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const refreshCapabilities = () => setSafariCapabilities(readSafariCapabilities());
+
+    window.addEventListener("resize", refreshCapabilities);
+    motionQuery?.addEventListener?.("change", refreshCapabilities);
+
+    return () => {
+      window.removeEventListener("resize", refreshCapabilities);
+      motionQuery?.removeEventListener?.("change", refreshCapabilities);
+    };
+  }, []);
+
   const identificationCompleted = Boolean(status?.identificationCompleted);
   const improvementUnlocked = Boolean(status?.improvementUnlocked || devUnlock);
   const locked = !devUnlock && (!identificationCompleted || !improvementUnlocked);
@@ -97,6 +159,14 @@ function LeoTrainingSafari() {
     [activities, recommendation]
   );
   const primaryAction = locked ? null : presentation.primaryAction;
+  const quality = getSafariQuality(safariCapabilities);
+  const mapFallback = (
+    <LeoSafariFallbackMap
+      zones={presentation.zones}
+      focusedActivityId={primaryAction?.activityId || null}
+      t={t}
+    />
+  );
 
   const showLockedState = useCallback(
     (reason) => {
@@ -207,9 +277,19 @@ function LeoTrainingSafari() {
         <section className="relative min-h-[31rem] overflow-hidden bg-emerald-900 sm:min-h-[36rem]" aria-labelledby="safari-map-title">
           <h2 id="safari-map-title" className="sr-only">{t("training_map_heading")}</h2>
           <div className="absolute inset-0">
-            <Suspense fallback={<div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${trainingBg})` }} aria-hidden="true" />}>
-              <LeoSafari3DMap zones={presentation.zones} focusedActivityId={primaryAction?.activityId || null} active={!reward} />
-            </Suspense>
+            {quality === "fallback" ? (
+              mapFallback
+            ) : (
+              <Suspense fallback={mapFallback}>
+                <LeoSafari3DMap
+                  zones={presentation.zones}
+                  focusedActivityId={primaryAction?.activityId || null}
+                  active={!reward}
+                  fallback={mapFallback}
+                  quality={quality}
+                />
+              </Suspense>
+            )}
           </div>
           <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-emerald-950/90 to-transparent px-5 pb-20 pt-6 text-white sm:px-8">
             <p className="text-xs font-black uppercase text-emerald-200">{t("safari_current_mission")}</p>

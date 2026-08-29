@@ -169,8 +169,8 @@ function LeoSafari3DMap({
         frameloop={renderSettings.frameloop}
         gl={{
           alpha: false,
-          antialias: renderSettings.antialias,
-          powerPreference: renderSettings.powerPreference,
+          antialias: true,
+          powerPreference: "high-performance",
         }}
         shadows={renderSettings.shadows}
       >
