@@ -459,23 +459,11 @@ body {
 
 .guardian-shell {
   font-family: var(--font-guardian);
-  background:
-    radial-gradient(circle at 8% 0%, rgba(245, 184, 75, 0.12), transparent 24rem),
-    radial-gradient(circle at 92% 4%, rgba(78, 159, 220, 0.1), transparent 22rem),
-    linear-gradient(135deg, #f7faf5 0%, #f8fbf8 48%, #f6faf9 100%);
+  background: #f4f7f5;
 }
 
 .guardian-shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.055;
-  background-image:
-    radial-gradient(ellipse at 12% 22%, rgba(15, 95, 72, 0.35) 0 8%, transparent 9%),
-    radial-gradient(ellipse at 86% 18%, rgba(21, 122, 90, 0.32) 0 7%, transparent 8%),
-    radial-gradient(ellipse at 78% 88%, rgba(78, 159, 220, 0.28) 0 9%, transparent 10%);
-  background-size: 38rem 38rem, 32rem 32rem, 36rem 36rem;
+  content: none;
 }
 
 .child-game-shell {
@@ -487,7 +475,42 @@ body {
 }
 
 .guardian-focus:focus-visible {
-  box-shadow: 0 0 0 4px rgba(21, 122, 90, 0.16);
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px rgba(21, 122, 90, 0.55);
+}
+
+.guardian-request-state {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  color: var(--guardian-text);
+}
+
+.guardian-request-state__skeleton {
+  overflow: hidden;
+  border-radius: 8px;
+  background: #e5ebe8;
+  animation: guardian-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.guardian-request-state__skeleton--avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+}
+
+@keyframes guardian-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.62;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .premium-page {
@@ -583,7 +606,8 @@ body {
   .animate-scale-in,
   .animate-fade-up,
   .animate-sound-wave,
-  .soft-glow {
+  .soft-glow,
+  .guardian-request-state__skeleton {
     animation: none;
   }
 }
