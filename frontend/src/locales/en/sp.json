@@ -57,6 +57,7 @@
   "safari_zone_available": "Available",
   "safari_zone_replay": "Completed - play again",
   "safari_zone_locked": "Locked",
+  "safari_locked_reason_fallback": "Finish the earlier jungle step to open this game.",
   "development_preview_enabled": "Development preview is enabled for this browser build.",
   "start_recommended_adventure": "Start Recommended Adventure",
   "view_all_leo_games": "View All Leo Games",

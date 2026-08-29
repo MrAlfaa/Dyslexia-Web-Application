@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, LockKeyhole, MapPin, RotateCcw, Star } from "lucide-react";
-import trainingBackground from "../../../assets/lexiland/leo-training-map-bg.png";
+import trainingBackground from "../../../assets/lexiland/leo-training-map-bg.webp";
 import { buildSafariPresentation } from "./leoSafariPresentation.utils";
 
 const LeoSafari3DMap = lazy(() => import("./LeoSafari3DMap"));
@@ -95,6 +95,13 @@ function LeoTrainingMap({
             const StateIcon = getStateIcon(zone);
             const isFocused = focusedActivityId === zone.activityId;
             const canPlay = !locked && (zone.isPrimary || Boolean(zone.replayAction));
+            const parsedStars = Number(zone.starsEarned ?? zone.stars ?? 0);
+            const zoneStars = Number.isFinite(parsedStars) ? Math.max(0, parsedStars) : 0;
+            const stateLabel = t(zone.stateLabelKey);
+            const lockReason =
+              zone.state === "locked"
+                ? zone.lockReason || t("safari_locked_reason_fallback")
+                : null;
 
             return (
               <article
@@ -113,7 +120,9 @@ function LeoTrainingMap({
                   })}
                   className="min-h-11 w-full rounded-md px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2"
                   aria-pressed={isFocused}
-                  aria-label={`${zone.shortTitle || zone.title}. ${t(zone.stateLabelKey)}`}
+                  aria-label={`${zone.shortTitle || zone.title}. ${stateLabel}. ${t("stars", { count: zoneStars })}${
+                    lockReason ? `. ${lockReason}` : ""
+                  }`}
                 >
                   <span className="flex items-center justify-between gap-2 text-xs font-black uppercase text-emerald-700">
                     {t("zone_number", { number: index + 1 })}
@@ -122,11 +131,15 @@ function LeoTrainingMap({
                   <span className="mt-1 block text-sm font-black leading-5 text-slate-950">
                     {zone.shortTitle || zone.title}
                   </span>
-                  <span className="mt-1 block text-xs font-bold leading-4 text-slate-600">
-                    {t(zone.stateLabelKey)}
+                  <span className="mt-1 flex items-center justify-between gap-2 text-xs font-bold leading-4 text-slate-600">
+                    <span>{stateLabel}</span>
+                    <span className="inline-flex shrink-0 items-center gap-1 text-amber-700">
+                      <Star aria-hidden="true" className="h-3.5 w-3.5 fill-current" />
+                      {t("stars", { count: zoneStars })}
+                    </span>
                   </span>
-                  {zone.state === "locked" && zone.lockReason ? (
-                    <span className="mt-1 block text-xs leading-4 text-slate-500">{zone.lockReason}</span>
+                  {lockReason ? (
+                    <span className="mt-1 block text-xs leading-4 text-slate-500">{lockReason}</span>
                   ) : null}
                 </button>
 
