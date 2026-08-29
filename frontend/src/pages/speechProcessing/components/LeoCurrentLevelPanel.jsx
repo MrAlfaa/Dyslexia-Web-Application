@@ -1,7 +1,11 @@
 import { useTranslation } from "react-i18next";
 import LeoSentencePrompt from "./LeoSentencePrompt";
 import SpeechRecorder from "./SpeechRecorder";
-import { getLeoPromptPrimaryAction } from "./speechGameFlow.utils";
+import {
+  canUsePromptPlayback,
+  getLeoPromptPrimaryAction,
+  getSubmissionRetryLabelKey,
+} from "./speechGameFlow.utils";
 
 const isSelectionPrompt = (prompt) =>
   prompt?.taskType === "first_sound" || prompt?.taskType === "minimal_pair";
@@ -74,9 +78,16 @@ function LeoCurrentLevelPanel({
   const sentenceMessage = getSentenceFeedbackMessage(feedback?.sentenceFeedback, t);
   const recordingLimitMs = longReadingPrompt ? (paragraphPrompt ? 45000 : 30000) : null;
   const primaryAction = getLeoPromptPrimaryAction({ feedback, submitting, selectionPrompt });
+  const promptPlaybackAvailable = canUsePromptPlayback({
+    allowPromptPlayback,
+    isRecording,
+    submitting,
+    feedback,
+  });
+  const retryLabelKey = getSubmissionRetryLabelKey({ feedback, longReadingPrompt });
 
   const speakPrompt = () => {
-    if (!allowPromptPlayback || isRecording) return;
+    if (!promptPlaybackAvailable) return;
     if (!prompt?.targetText || typeof window === "undefined" || !window.speechSynthesis) return;
     const utterance = new SpeechSynthesisUtterance(prompt.targetText);
     utterance.lang = "en-US";
@@ -99,7 +110,7 @@ function LeoCurrentLevelPanel({
             {t("level_progress", { current: level, total: totalLevels })}
           </h2>
         </div>
-        {allowPromptPlayback && (
+        {promptPlaybackAvailable && (
           <button
             type="button"
             onClick={speakPrompt}
@@ -296,11 +307,7 @@ function LeoCurrentLevelPanel({
                   onClick={onRetry}
                   className="mt-4 w-full rounded-[1.5rem] bg-orange-500 px-6 py-4 text-sm font-black text-white shadow-lg shadow-orange-950/10 transition hover:-translate-y-1"
                 >
-                  {feedback.submissionFailed
-                    ? t("recorder_again")
-                    : longReadingPrompt
-                      ? t("sentence_retry_button")
-                      : t("try_this_level_again")}
+                  {t(retryLabelKey)}
                 </button>
               ) : (
                 <button

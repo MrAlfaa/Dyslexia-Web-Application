@@ -19,6 +19,7 @@ import {
   canPlayTargetAudio,
   canSubmitLeoPrompt,
   createSubmissionFailureFeedback,
+  getSubmissionFailurePresentation,
 } from "./speechGameFlow.utils";
 
 const isSelectionPrompt = (prompt) =>
@@ -104,6 +105,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
   const sounds = useLeoSoundEffects();
 
   const prompt = prompts[index];
+  const selectionPrompt = isSelectionPrompt(prompt);
   const longReadingPrompt = isLongReadingPrompt(prompt);
   const allowPromptPlayback = canPlayTargetAudio({
     mode: "improvement",
@@ -117,6 +119,13 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
     () => getLeoActivityTheme(activity?.activityId),
     [activity?.activityId]
   );
+  const localizedTheme = useMemo(() => ({
+    ...theme,
+    title: t(theme.titleKey || "training_safari_title", { defaultValue: t("training_safari_title") }),
+    animalMessage: t(theme.animalMessageKey || "follow_sound_path", { defaultValue: t("follow_sound_path") }),
+    collectible: t(theme.collectibleKey || "sound_gems", { defaultValue: t("sound_gems") }),
+    rewardName: t(theme.rewardNameKey || "jungle_sound_badge", { defaultValue: t("jungle_sound_badge") }),
+  }), [t, theme]);
   const totalStars = useMemo(
     () => Object.values(levelStars).reduce((sum, value) => sum + (Number(value) || 0), 0),
     [levelStars]
@@ -202,7 +211,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
         ...(response.data?.data || {}),
         totalStars,
         starsEarned: response.data?.data?.starsEarned ?? totalStars,
-        rewardName: response.data?.data?.rewardName || theme.rewardName,
+        rewardName: response.data?.data?.rewardName || localizedTheme.rewardName,
         childMessage: response.data?.data?.childMessage || t("jungle_reward_unlocked"),
       });
     } catch (err) {
@@ -245,7 +254,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
 
     try {
       let payload;
-      if (isSelectionPrompt(prompt)) {
+      if (selectionPrompt) {
         payload = {
           sessionId,
           activityId: activity.activityId,
@@ -299,7 +308,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
         [prompt.promptId]: currentAttemptNo,
       }));
       const inferredLevelCompleted = canAttemptProgress(result, {
-        selectionPrompt: isSelectionPrompt(prompt),
+        selectionPrompt,
       });
       const levelCompleted = longReadingPrompt
         ? Boolean(inferredLevelCompleted && canLongReadingPromptProgress(result))
@@ -330,11 +339,15 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
         advanceAfterSuccess(1400);
       }
     } catch {
+      const failurePresentation = getSubmissionFailurePresentation({
+        taskType: prompt.taskType,
+      });
       setRecording(null);
       setFeedback(createSubmissionFailureFeedback({
         promptId: prompt.promptId,
-        childFeedback: t("recording_check_failed"),
-        leoMessage: t("recording_check_failed_hint"),
+        childFeedback: t(failurePresentation.childFeedbackKey),
+        leoMessage: t(failurePresentation.leoMessageKey),
+        retryAction: failurePresentation.retryAction,
       }));
       setError("");
     } finally {
@@ -385,30 +398,33 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
   if (!gameStarted) {
     return (
       <LeoGameStartOverlay
-        title={theme.title || activity.title}
-        subtitle={t("follow_sound_path")}
+        title={t(theme.titleKey, { defaultValue: t("training_safari_title") })}
+        subtitle={t(theme.animalMessageKey, { defaultValue: t("follow_sound_path") })}
+        guideMessage={t(theme.animalMessageKey, { defaultValue: t("follow_sound_path") })}
+        collectibleLabel={t(theme.collectibleKey, { defaultValue: t("sound_gems") })}
+        rewardLabel={t(theme.rewardNameKey, { defaultValue: t("jungle_sound_badge") })}
         startLabel={t("start_adventure")}
         onStart={openGame}
         onBack={onCancel}
         prompts={trainingPrompts.length ? trainingPrompts : prompts}
         completedPromptIds={completedPromptIds}
         totalStars={totalStars}
-        theme={theme}
+        theme={localizedTheme}
       />
     );
   }
 
   return (
-    <LeoGameSessionModal title={theme.title || activity.title} onClose={onCancel}>
+    <LeoGameSessionModal title={localizedTheme.title} onClose={onCancel}>
       <div className="space-y-4">
-        <LeoLevelFeedbackToast feedback={toastFeedback} theme={theme} />
+        <LeoLevelFeedbackToast feedback={toastFeedback} theme={localizedTheme} />
         <LeoGameHud
-          title={attemptPhase === "checkpoint" ? t("trail_check_title") : (theme.title || activity.title)}
+          title={attemptPhase === "checkpoint" ? t("trail_check_title") : localizedTheme.title}
           onBack={onCancel}
           currentLevel={promptNo}
           totalLevels={prompts.length || 1}
           totalStars={totalStars}
-          theme={theme}
+          theme={localizedTheme}
         />
 
         <div className="grid gap-4 xl:grid-cols-[1fr_330px]">
@@ -418,7 +434,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
               prompt={prompt}
               level={promptNo}
               totalLevels={prompts.length}
-              theme={theme}
+              theme={localizedTheme}
               selectedAnswer={selectedAnswer}
               onSelectAnswer={setSelectedAnswer}
               recording={recording}
@@ -453,7 +469,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
                       ? feedback.leoMessage
                       : longReadingPrompt && feedback
                         ? getSentenceFeedbackMessage(feedback.sentenceFeedback, t)
-                        : feedback?.leoMessage || theme.animalMessage}
+                        : feedback?.leoMessage || localizedTheme.animalMessage}
                   </p>
                 </div>
               </div>
@@ -486,7 +502,10 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
                 completedPromptIds={completedPromptIds}
                 levelStars={levelStars}
                 invalidPromptIds={invalidPromptIds}
-                theme={theme}
+                theme={localizedTheme}
+                guideMessage={localizedTheme.animalMessage}
+                collectibleLabel={localizedTheme.collectible}
+                rewardLabel={localizedTheme.rewardName}
                 compact
                 className="min-h-[16rem]"
               />

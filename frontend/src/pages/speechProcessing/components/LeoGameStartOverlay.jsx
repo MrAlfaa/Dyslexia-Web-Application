@@ -6,6 +6,9 @@ import LeoLevelMap from "./LeoLevelMap";
 function LeoGameStartOverlay({
   title,
   subtitle,
+  guideMessage,
+  collectibleLabel,
+  rewardLabel,
   startLabel,
   backLabel,
   onStart,
@@ -21,7 +24,10 @@ function LeoGameStartOverlay({
   const completedLevels = completedPromptIds.length;
   const resolvedStartLabel = startLabel || t("start_adventure");
   const resolvedBackLabel = backLabel || t("back_to_sound_safari");
-  const collectibleLabel = theme?.collectible || t("sound_gems");
+  const resolvedTitle = title || t("training_safari_title");
+  const resolvedGuideMessage = guideMessage || t("lets_find_sound_path");
+  const resolvedCollectibleLabel = collectibleLabel || t("sound_gems");
+  const resolvedRewardLabel = rewardLabel || t("jungle_sound_badge");
 
   return (
     <section
@@ -50,7 +56,7 @@ function LeoGameStartOverlay({
               {t("start_overlay_level_progress", { completed: completedLevels, total: totalLevels })}
             </span>
             <span className="rounded-[1.35rem] border-4 border-amber-100 bg-amber-50 px-4 py-2 text-sm font-black text-emerald-950 shadow-xl shadow-emerald-950/20">
-              {totalStars} {collectibleLabel}
+              {totalStars} {resolvedCollectibleLabel}
             </span>
           </div>
         </div>
@@ -62,7 +68,7 @@ function LeoGameStartOverlay({
               {t("leo_sound_safari_title")}
             </p>
             <h1 className="mt-1 text-3xl font-black leading-tight text-white drop-shadow-[0_3px_0_rgba(69,26,3,0.65)] sm:text-4xl lg:text-5xl">
-              {title}
+              {resolvedTitle}
             </h1>
           </div>
 
@@ -80,7 +86,7 @@ function LeoGameStartOverlay({
                 className="h-40 object-contain mix-blend-multiply drop-shadow-[0_18px_24px_rgba(6,78,59,0.55)] sm:h-52 lg:h-56"
               />
               <div className="absolute -right-5 top-12 max-w-[150px] rounded-[1.4rem] border-4 border-amber-100 bg-amber-50 px-4 py-3 text-center text-sm font-black leading-5 text-amber-950 shadow-xl shadow-emerald-950/20">
-                {t("lets_find_sound_path")}
+                {resolvedGuideMessage}
               </div>
             </div>
           </aside>
@@ -100,7 +106,7 @@ function LeoGameStartOverlay({
                 {t("collected_label")}
               </p>
               <p className="mt-1 text-4xl font-black text-amber-700">{totalStars}</p>
-              <p className="text-sm font-black">{collectibleLabel}</p>
+              <p className="text-sm font-black">{resolvedCollectibleLabel}</p>
             </div>
 
             <p className="max-w-[260px] rounded-[1.35rem] bg-emerald-950/72 px-4 py-3 text-center text-xs font-bold leading-5 text-emerald-50 ring-1 ring-white/20">
@@ -116,6 +122,9 @@ function LeoGameStartOverlay({
               levelStars={{}}
               invalidPromptIds={[]}
               theme={theme}
+              guideMessage={resolvedGuideMessage}
+              collectibleLabel={resolvedCollectibleLabel}
+              rewardLabel={resolvedRewardLabel}
               variant="adventure"
             />
           </div>

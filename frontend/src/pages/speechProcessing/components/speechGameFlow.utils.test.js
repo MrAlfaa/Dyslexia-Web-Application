@@ -3,14 +3,18 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import * as speechGameFlow from "./speechGameFlow.utils.js";
+import { LEO_ACTIVITY_THEMES } from "./leoActivityThemes.js";
 
 const {
   canPlayTargetAudio,
   canAttemptProgress,
   canSubmitLeoPrompt,
+  canUsePromptPlayback,
   createSubmissionFailureFeedback,
   getAutoSubmitDelay,
   getLeoPromptPrimaryAction,
+  getSubmissionFailurePresentation,
+  getSubmissionRetryLabelKey,
   resolveGuardianChildId,
 } = speechGameFlow;
 
@@ -74,6 +78,7 @@ test("a failed automatic submission becomes a resolved re-record state", () => {
     levelCompleted: false,
     nextPromptUnlocked: false,
     retryRequired: true,
+    retryAction: "recording",
     submissionFailed: true,
     starsEarned: 0,
     levelState: "submission_failed",
@@ -81,6 +86,88 @@ test("a failed automatic submission becomes a resolved re-record state", () => {
   assert.equal(getLeoPromptPrimaryAction({ feedback }), "retry");
   assert.equal(canSubmitLeoPrompt({ prompt: { promptId: "prompt-7" }, feedback }), false);
   assert.equal(canSubmitLeoPrompt({ prompt: { promptId: "prompt-7" }, feedback: null }), true);
+});
+
+test("feedback and checking states suppress Echo Roar prompt playback", () => {
+  assert.equal(canUsePromptPlayback({ allowPromptPlayback: true }), true);
+  assert.equal(canUsePromptPlayback({ allowPromptPlayback: true, isRecording: true }), false);
+  assert.equal(canUsePromptPlayback({ allowPromptPlayback: true, submitting: true }), false);
+  assert.equal(canUsePromptPlayback({
+    allowPromptPlayback: true,
+    feedback: { retryRequired: true },
+  }), false);
+  assert.equal(canUsePromptPlayback({
+    allowPromptPlayback: true,
+    feedback: { nextPromptUnlocked: true },
+  }), false);
+
+  const panelSource = readSiblingSource("./LeoCurrentLevelPanel.jsx");
+  assert.match(panelSource, /const promptPlaybackAvailable = canUsePromptPlayback\(/);
+  assert.match(panelSource, /\{promptPlaybackAvailable && \(/);
+});
+
+test("every activity start overlay resolves title, guide, and collectible labels through i18n", () => {
+  const english = JSON.parse(readSiblingSource("../../../locales/en/sp.json"));
+  const sinhala = JSON.parse(readSiblingSource("../../../locales/si/sp.json"));
+  const activitySource = readSiblingSource("./LeoActivityPlay.jsx");
+  const overlaySource = readSiblingSource("./LeoGameStartOverlay.jsx");
+
+  Object.values(LEO_ACTIVITY_THEMES).forEach((theme) => {
+    for (const keyName of ["titleKey", "animalMessageKey", "collectibleKey", "rewardNameKey"]) {
+      const translationKey = theme[keyName];
+      assert.equal(typeof english[translationKey], "string");
+      assert.equal(typeof sinhala[translationKey], "string");
+      assert.notEqual(sinhala[translationKey], english[translationKey]);
+    }
+  });
+
+  assert.match(activitySource, /title=\{t\(theme\.titleKey/);
+  assert.match(activitySource, /guideMessage=\{t\(theme\.animalMessageKey/);
+  assert.match(activitySource, /collectibleLabel=\{t\(theme\.collectibleKey/);
+  assert.match(activitySource, /rewardLabel=\{t\(theme\.rewardNameKey/);
+  assert.doesNotMatch(activitySource, /defaultValue:\s*activity\.title/);
+  assert.match(activitySource, /theme=\{localizedTheme\}/);
+  assert.doesNotMatch(overlaySource, /theme\?\.(?:collectible|animalMessage|rewardName)/);
+
+  const mapSource = readSiblingSource("./LeoLevelMap.jsx");
+  const nodeSource = readSiblingSource("./LeoLevelNode.jsx");
+  const rewardSource = readSiblingSource("./LeoRewardChest.jsx");
+  assert.doesNotMatch(mapSource, /Jungle Level Path|Help Leo collect every sound gem|\} levels/);
+  assert.doesNotMatch(nodeSource, /"Locked"|"Ready"|"Retry"|`Level \$\{/);
+  assert.doesNotMatch(rewardSource, /Final Reward|Jungle Sound Badge|stars collected|Finish every level/);
+});
+
+test("selection API failures use selection retry copy and action", () => {
+  for (const taskType of ["first_sound", "minimal_pair"]) {
+    assert.deepEqual(getSubmissionFailurePresentation({ taskType }), {
+      childFeedbackKey: "selection_check_failed",
+      leoMessageKey: "selection_check_failed_hint",
+      retryAction: "selection",
+    });
+  }
+  assert.deepEqual(getSubmissionFailurePresentation({ taskType: "word_read" }), {
+    childFeedbackKey: "recording_check_failed",
+    leoMessageKey: "recording_check_failed_hint",
+    retryAction: "recording",
+  });
+
+  const feedback = createSubmissionFailureFeedback({
+    promptId: "sound-twins-2",
+    childFeedback: "Leo could not check that choice.",
+    leoMessage: "Choose the sound again.",
+    retryAction: "selection",
+  });
+
+  assert.equal(feedback.retryAction, "selection");
+  assert.equal(getSubmissionRetryLabelKey({ feedback }), "selection_try_again");
+  assert.equal(getSubmissionRetryLabelKey({
+    feedback: createSubmissionFailureFeedback({ promptId: "echo-2" }),
+  }), "recorder_again");
+
+  const activitySource = readSiblingSource("./LeoActivityPlay.jsx");
+  assert.match(activitySource, /getSubmissionFailurePresentation\(\{\s*taskType:\s*prompt\.taskType/);
+  assert.match(activitySource, /t\(failurePresentation\.childFeedbackKey\)/);
+  assert.match(activitySource, /retryAction:\s*failurePresentation\.retryAction/);
 });
 
 test("prompt lifecycle exposes only one primary action", () => {
