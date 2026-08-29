@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import logo from "../../assets/lexiland/lexiland-logo.png";
+import logo from "../../assets/lexiland/lexiland-logo.webp";
 
 function Register() {
   return (

@@ -6,7 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthShell from "../../components/lexiland/AuthShell";
 import ExpeditionButton from "../../components/lexiland/ExpeditionButton";
-import guardianBackground from "../../assets/lexiland/guardian-console-bg.png";
+import guardianBackground from "../../assets/lexiland/guardian-console-bg.webp";
 import { adminRegister } from "../../services/admin/api";
 
 const AdminRegister = () => {

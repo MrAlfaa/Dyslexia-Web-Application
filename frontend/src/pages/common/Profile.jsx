@@ -43,7 +43,12 @@ function Profile() {
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState(createEmptyProfile);
   const [initialProfile, setInitialProfile] = useState(null);
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    messageKey: null,
+    type: "success",
+  });
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -78,41 +83,80 @@ function Profile() {
         setInitialProfile(data);
       } catch (error) {
         console.error("Error fetching profile:", error);
-        setToast({ show: true, message: t("failed_load_profile"), type: "error" });
+        setToast({ show: true, message: "", messageKey: "failed_load_profile", type: "error" });
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, [t]);
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setProfile((current) => ({ ...current, [name]: value }));
   };
 
-  const handleFileChange = (event) => {
+  const showPhotoError = (messageKey, input) => {
+    setToast({ show: true, message: "", messageKey, type: "error" });
+    input.value = "";
+  };
+
+  const decodeImageFile = (file) =>
+    new Promise((resolve, reject) => {
+      const imageUrl = URL.createObjectURL(file);
+      const image = new Image();
+      const cleanup = () => URL.revokeObjectURL(imageUrl);
+
+      image.onload = () => {
+        const isDecoded = image.naturalWidth > 0 && image.naturalHeight > 0;
+        cleanup();
+        if (isDecoded) resolve();
+        else reject(new Error("Image has no decodable dimensions."));
+      };
+      image.onerror = () => {
+        cleanup();
+        reject(new Error("Image decoding failed."));
+      };
+      image.src = imageUrl;
+    });
+
+  const readImageDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error("Image reading failed."));
+      reader.onabort = () => reject(new Error("Image reading was cancelled."));
+      reader.readAsDataURL(file);
+    });
+
+  const handleFileChange = async (event) => {
+    const input = event.currentTarget;
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setToast({ show: true, message: t("profile_image_only"), type: "error" });
-      event.target.value = "";
+    const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (!allowedTypes.has(file.type)) {
+      showPhotoError("profile_image_only", input);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setToast({ show: true, message: t("file_too_large"), type: "error" });
-      event.target.value = "";
+      showPhotoError("file_too_large", input);
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setProfile((current) => ({ ...current, profilePhoto: reader.result }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      await decodeImageFile(file);
+      const dataUrl = await readImageDataUrl(file);
+      if (typeof dataUrl !== "string" || !dataUrl.startsWith(`data:${file.type};base64,`)) {
+        throw new Error("Unexpected image encoding.");
+      }
+      setProfile((current) => ({ ...current, profilePhoto: dataUrl }));
+    } catch (error) {
+      console.error("Error reading profile photo:", error);
+      showPhotoError("profile_image_invalid", input);
+    }
   };
 
   const openPhotoPickerFromKeyboard = (event) => {
@@ -253,7 +297,7 @@ function Profile() {
                 type="file"
                 tabIndex={-1}
                 className="sr-only"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileChange}
               />
             </div>
@@ -415,7 +459,7 @@ function Profile() {
 
       {toast.show ? (
         <Toast
-          message={toast.message}
+          message={toast.messageKey ? t(toast.messageKey) : toast.message}
           type={toast.type}
           onClose={() => setToast((current) => ({ ...current, show: false }))}
         />

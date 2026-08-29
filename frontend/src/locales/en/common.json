@@ -36,6 +36,7 @@
   "failed_update_profile": "Your profile could not be saved. Please try again.",
   "file_too_large": "File is too large. Please select an image under 5MB.",
   "profile_image_only": "Please choose an image file.",
+  "profile_image_invalid": "That image could not be opened. Choose a valid JPEG, PNG, or WebP image.",
   "hello_this_is_profile": "Hello, this is your profile",
   "not_set": "Not Set",
   "my_game_reports": "My Game Reports",

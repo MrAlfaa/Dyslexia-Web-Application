@@ -36,6 +36,7 @@
   "failed_update_profile": "ඔයාගේ පැතිකඩ සුරකින්න බැරි වුණා. නැවත උත්සාහ කරන්න.",
   "file_too_large": "ගොනුව විශාල වැඩිය. කරුණාකර 5MB ට අඩු රූපයක් තෝරන්න.",
   "profile_image_only": "කරුණාකර රූප ගොනුවක් තෝරන්න.",
+  "profile_image_invalid": "එම රූපය විවෘත කළ නොහැක. නිවැරදි JPEG, PNG, හෝ WebP රූපයක් තෝරන්න.",
   "hello_this_is_profile": "ආයුබෝවන්, මේ ඔබේ පැතිකඩයි",
   "not_set": "සකසා නැත",
   "my_game_reports": "මගේ ක්‍රීඩා වාර්තා",

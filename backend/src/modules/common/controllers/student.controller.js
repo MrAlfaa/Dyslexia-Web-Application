@@ -1,4 +1,7 @@
 const Student = require("../models/student.model");
+const {
+  validateProfilePhotoDataUrl,
+} = require("../services/profilePhotoValidation.service");
 
 // GET /api/students/profile
 exports.getProfile = async (req, res) => {
@@ -17,7 +20,15 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { fullName, grade, profilePhoto, gender, school } = req.body;
-    
+
+    const photoValidation = validateProfilePhotoDataUrl(profilePhoto);
+    if (!photoValidation.valid) {
+      return res.status(400).json({
+        code: "invalid_profile_photo",
+        message: photoValidation.reason,
+      });
+    }
+
     const student = await Student.findByIdAndUpdate(
       req.user.id,
       {

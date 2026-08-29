@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import lexilandLogo from '../../assets/lexiland/lexiland-logo.png';
+import lexilandLogo from '../../assets/lexiland/lexiland-logo.webp';
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ');
 

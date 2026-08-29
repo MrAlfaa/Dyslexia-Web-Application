@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginStudentByUsername } from "../../services/auth/api";
-import logo from "../../assets/lexiland/lexiland-logo.png";
+import logo from "../../assets/lexiland/lexiland-logo.webp";
 
 function Login() {
   const navigate = useNavigate();
