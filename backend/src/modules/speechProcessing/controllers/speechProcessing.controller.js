@@ -28,6 +28,7 @@ const {
   buildActivityMap,
 } = require("../services/leoActivityRecommendation.service");
 const { getLeoActivityAccess } = require("../services/leoActivityAccess.service");
+const { getLeoAttemptProgress } = require("../services/leoAttemptProgress.service");
 const {
   predictPronunciationSupport,
 } = require("../services/pronunciationModel.service");
@@ -1513,6 +1514,11 @@ exports.submitImprovementAttempt = async (req, res) => {
       },
       pronunciationModel,
     });
+    const attemptProgress = getLeoAttemptProgress({
+      isSelection,
+      selectedCorrect: attempt.selectedCorrect,
+      validAudio: features.validAudio,
+    });
 
     res.status(201).json({
       success: true,
@@ -1525,11 +1531,8 @@ exports.submitImprovementAttempt = async (req, res) => {
         childFeedback,
         leoMessage,
         validAudio: features.validAudio,
-        levelCompleted: features.validAudio || isSelection,
-        retryRequired: !(features.validAudio || isSelection),
-        nextPromptUnlocked: features.validAudio || isSelection,
-        nextPromptIndex: features.validAudio || isSelection ? promptIndex + 1 : Math.max(promptIndex, 0),
-        levelState: features.validAudio || isSelection ? "completed" : "invalid_retry",
+        ...attemptProgress,
+        nextPromptIndex: attemptProgress.nextPromptUnlocked ? promptIndex + 1 : Math.max(promptIndex, 0),
         selectedCorrect: attempt.selectedCorrect,
         audioQuality: attempt.audioQuality,
         modelVersion: MODEL_VERSION,
