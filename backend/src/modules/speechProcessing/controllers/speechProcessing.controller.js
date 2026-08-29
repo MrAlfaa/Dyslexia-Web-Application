@@ -29,6 +29,7 @@ const {
 } = require("../services/leoActivityRecommendation.service");
 const { getLeoActivityAccess } = require("../services/leoActivityAccess.service");
 const { getLeoAttemptProgress } = require("../services/leoAttemptProgress.service");
+const { mergeActivityProgress } = require("../services/leoActivityProgress.service");
 const {
   predictPronunciationSupport,
 } = require("../services/pronunciationModel.service");
@@ -1587,22 +1588,30 @@ exports.completeImprovementSession = async (req, res) => {
     }
     const completedActivityIds = Array.from(new Set([...(speech.completedActivityIds || []), session.activityId]));
     const previousProgress = speech.activityProgress || [];
+    const previousActivityProgress = previousProgress.find(
+      (item) => item.activityId === session.activityId
+    );
     const bestScore = attempts.reduce(
       (best, attempt) =>
         Math.max(best, Number(attempt.features?.pronunciationScorePlaceholder || 0)),
       0
     );
+    const mergedActivityProgress = mergeActivityProgress({
+      previous: previousActivityProgress,
+      sessionAttemptCount: attempts.length,
+      starsEarned,
+      bestScore,
+      now: new Date(),
+    });
+    const previousActivityStars = Number(
+      previousActivityProgress?.starsEarned ?? previousActivityProgress?.stars ?? 0
+    );
+    const newlyEarnedStars = Math.max(0, mergedActivityProgress.starsEarned - previousActivityStars);
     const progressDraft = [
       ...previousProgress.filter((item) => item.activityId !== session.activityId),
       {
         activityId: session.activityId,
-        status: "completed",
-        stars: starsEarned,
-        starsEarned,
-        attemptsCompleted: attempts.length,
-        bestScore: Number(bestScore.toFixed(2)),
-        completedAt: new Date(),
-        lastPlayedAt: new Date(),
+        ...mergedActivityProgress,
       },
     ];
     const draftSpeech = {
@@ -1634,7 +1643,7 @@ exports.completeImprovementSession = async (req, res) => {
         "lexilandProgress.speech.currentActivityId": nextActivityId,
         "lexilandProgress.speech.recommendedActivityIds": plan.recommendedActivityIds,
         "lexilandProgress.speech.activityProgress": progressDraft,
-        "lexilandProgress.speech.stars": (speech.stars || 0) + starsEarned,
+        "lexilandProgress.speech.stars": (speech.stars || 0) + newlyEarnedStars,
         "lexilandProgress.speech.weakSkillFocus": plan.skillFocus || getActivityById(nextActivityId)?.skill || "",
       },
     });

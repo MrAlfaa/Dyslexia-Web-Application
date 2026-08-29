@@ -13,6 +13,7 @@ import LeoLevelFeedbackToast from "./LeoLevelFeedbackToast";
 import LeoLevelMap from "./LeoLevelMap";
 import { getLeoActivityTheme } from "./leoActivityThemes";
 import useLeoSoundEffects from "./useLeoSoundEffects";
+import { canPlayTargetAudio } from "./speechGameFlow.utils";
 
 const isSelectionPrompt = (prompt) =>
   prompt?.taskType === "first_sound" || prompt?.taskType === "minimal_pair";
@@ -40,6 +41,12 @@ function LeoActivityPlay({ activity, onComplete, onCancel }) {
   const sounds = useLeoSoundEffects();
 
   const prompt = prompts[index];
+  const allowPromptPlayback = canPlayTargetAudio({
+    mode: "improvement",
+    attemptPhase,
+    activityId: activity?.activityId,
+    taskType: prompt?.taskType,
+  });
   const promptNo = index + 1;
   const theme = useMemo(
     () => getLeoActivityTheme(activity?.activityId),
@@ -304,6 +311,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel }) {
               onRecordingStateChange={handleRecordingStateChange}
               recorderSupported={recorderSupported}
               isRecording={isRecording}
+              allowPromptPlayback={allowPromptPlayback}
               feedback={feedback}
               error={error}
               submitting={submitting}

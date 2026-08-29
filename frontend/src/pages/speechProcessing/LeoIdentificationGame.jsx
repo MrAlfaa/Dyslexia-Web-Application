@@ -15,6 +15,7 @@ import LeoLevelFeedbackToast from "./components/LeoLevelFeedbackToast";
 import LeoLevelMap from "./components/LeoLevelMap";
 import { getLeoActivityTheme } from "./components/leoActivityThemes";
 import useLeoSoundEffects from "./components/useLeoSoundEffects";
+import { canPlayTargetAudio } from "./components/speechGameFlow.utils";
 
 const fallbackPrompts = [
   {
@@ -75,6 +76,11 @@ function LeoIdentificationGame() {
     [levelStars]
   );
   const attemptNo = (attemptCounts[currentPrompt?.promptId] || 0) + 1;
+  const allowPromptPlayback = canPlayTargetAudio({
+    mode: "identification",
+    activityId: "leo_first_check",
+    taskType: currentPrompt?.taskType,
+  });
 
   useEffect(() => {
     const start = async () => {
@@ -311,6 +317,7 @@ function LeoIdentificationGame() {
                   onRecordingStateChange={handleRecordingStateChange}
                   recorderSupported={recorderSupported}
                   isRecording={isRecording}
+                  allowPromptPlayback={allowPromptPlayback}
                   feedback={latestResult}
                   error={error}
                   submitting={submitting}

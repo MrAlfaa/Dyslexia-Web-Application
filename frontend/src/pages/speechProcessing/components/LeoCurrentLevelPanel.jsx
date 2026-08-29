@@ -17,6 +17,7 @@ function LeoCurrentLevelPanel({
   onRecordingStateChange,
   recorderSupported,
   isRecording = false,
+  allowPromptPlayback = false,
   feedback,
   error,
   submitting,
@@ -28,7 +29,7 @@ function LeoCurrentLevelPanel({
   const options = prompt?.options || [prompt?.targetSound, prompt?.pairText, prompt?.targetText].filter(Boolean);
 
   const speakPrompt = () => {
-    if (isRecording) return;
+    if (!allowPromptPlayback || isRecording) return;
     if (!prompt?.targetText || typeof window === "undefined" || !window.speechSynthesis) return;
     const utterance = new SpeechSynthesisUtterance(prompt.targetText);
     utterance.lang = "en-US";
@@ -51,14 +52,16 @@ function LeoCurrentLevelPanel({
             Level {level} of {totalLevels}
           </h2>
         </div>
-        <button
-          type="button"
-          onClick={speakPrompt}
-          disabled={isRecording}
-          className="rounded-full bg-white px-4 py-3 text-sm font-black text-emerald-900 shadow-sm ring-1 ring-emerald-100 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Play Sound
-        </button>
+        {allowPromptPlayback && (
+          <button
+            type="button"
+            onClick={speakPrompt}
+            disabled={isRecording}
+            className="rounded-full bg-white px-4 py-3 text-sm font-black text-emerald-900 shadow-sm ring-1 ring-emerald-100 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Play Sound
+          </button>
+        )}
       </div>
 
       <div className="mt-5 rounded-[2rem] bg-white/82 p-5 text-center shadow-inner ring-1 ring-white">
