@@ -6,9 +6,11 @@ const WMIdentifyResult = require("../../workingMemory/models/workingMemoryIdenti
 const PAIdentifyResult = require("../../phonologicalAwareness/models/phonologicalIdentify.model");
 const {
   canAddChild,
-  getPlanLimit,
   ensureGuardianPlanDefaults,
 } = require("../../subscription/subscription.service");
+const {
+  buildPublicGuardianAccount,
+} = require("../services/publicGuardianRegistration.service");
 
 const isSuperAdminRequest = (req) => req.user?.role === "super admin";
 
@@ -21,21 +23,9 @@ const getChildScope = (req) =>
 exports.registerAdmin = async (req, res) => {
   try {
     const { fullName, email, password } = req.body;
-    const role = req.body.role === "super admin" ? "super admin" : "school admin";
-    const subscriptionPlan = String(req.body.subscriptionPlan || "individual")
-      .trim()
-      .toLowerCase();
 
     if (!fullName || !email || !password) {
       return res.status(400).json({ success: false, message: "All fields are required" });
-    }
-
-    if (!["school admin", "super admin"].includes(role)) {
-      return res.status(400).json({ success: false, message: "Invalid role" });
-    }
-
-    if (!["individual", "plus", "premium"].includes(subscriptionPlan)) {
-      return res.status(400).json({ success: false, message: "Invalid subscription plan" });
     }
 
     const existingAdmin = await Admin.findOne({ email });
@@ -46,16 +36,11 @@ exports.registerAdmin = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const admin = new Admin({
+    const admin = new Admin(buildPublicGuardianAccount({
       fullName,
       email,
       password: hashedPassword,
-      role,
-      subscriptionPlan,
-      subscriptionStatus: "trial",
-      childLimit: getPlanLimit(subscriptionPlan),
-      planStartedAt: new Date(),
-    });
+    }));
 
     await admin.save();
 
