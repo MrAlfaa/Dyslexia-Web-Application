@@ -27,6 +27,7 @@ const {
   getActivityPlan,
   buildActivityMap,
 } = require("../services/leoActivityRecommendation.service");
+const { getLeoActivityAccess } = require("../services/leoActivityAccess.service");
 const {
   predictPronunciationSupport,
 } = require("../services/pronunciationModel.service");
@@ -1260,7 +1261,18 @@ exports.getImprovementActivityDetail = async (req, res) => {
       speech,
       recentAttempts: await getRecentImprovementAttempts(req.user.id),
     });
-    const activityState = buildActivityMap({ speech, plan }).find(
+    const activities = buildActivityMap({ speech, plan });
+    const activityAccess = getLeoActivityAccess({
+      activities,
+      activityId: activity.activityId,
+    });
+    if (!activityAccess.allowed) {
+      return res.status(403).json({
+        code: "activity_locked",
+        lockReason: activityAccess.lockReason,
+      });
+    }
+    const activityState = activities.find(
       (item) => item.activityId === activity.activityId
     );
 
@@ -1333,6 +1345,14 @@ exports.startImprovementSession = async (req, res) => {
     const activity = getActivityById(activityId);
     if (!activity) {
       return res.status(400).json({ success: false, message: "Unknown Leo activity" });
+    }
+    const activities = buildActivityMap({ speech, plan });
+    const activityAccess = getLeoActivityAccess({ activities, activityId });
+    if (!activityAccess.allowed) {
+      return res.status(403).json({
+        code: "activity_locked",
+        lockReason: activityAccess.lockReason,
+      });
     }
 
     const prompts = getActivityPrompts(activityId);

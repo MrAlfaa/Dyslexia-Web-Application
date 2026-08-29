@@ -178,6 +178,10 @@ const buildActivityMap = ({ speech = {}, plan } = {}) => {
   }, {});
   const recommendedSet = new Set(plan?.recommendedActivityIds || speech.recommendedActivityIds || []);
   const currentActivityId = plan?.nextActivityId || speech.currentActivityId;
+  const currentActivity = getActivityById(currentActivityId);
+  const lockReason = currentActivity
+    ? `Complete ${currentActivity.shortTitle || currentActivity.title} first.`
+    : "Complete the activity shown as Leo's Pick first.";
 
   return getImprovementActivities().map((activity) => {
     const saved = progressMap[activity.activityId] || {};
@@ -193,6 +197,7 @@ const buildActivityMap = ({ speech = {}, plan } = {}) => {
       ...activity,
       state,
       status: state,
+      ...(state === "locked" ? { lockReason } : {}),
       stars: saved.starsEarned || saved.stars || 0,
       starsEarned: saved.starsEarned || saved.stars || 0,
       attemptsCompleted: saved.attemptsCompleted || 0,
