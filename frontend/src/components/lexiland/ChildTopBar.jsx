@@ -1,5 +1,25 @@
 import { ArrowLeft, Star, UserRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import LexiLandBrand from './LexiLandBrand';
+
+const isInternalHref = (href) =>
+  typeof href === 'string' && href.startsWith('/') && !href.startsWith('//');
+
+const NavigationLink = ({ href, children, ...linkProps }) => {
+  if (isInternalHref(href)) {
+    return (
+      <Link to={href} {...linkProps}>
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <a href={href} {...linkProps}>
+      {children}
+    </a>
+  );
+};
 
 const ChildTopBar = ({
   profileHref = '/profile',
@@ -9,18 +29,19 @@ const ChildTopBar = ({
   children,
   backLabel = 'Go back',
   profileLabel = 'Open profile',
+  starsAriaLabel,
   brandTagline,
 }) => (
   <header className="lex-child-topbar">
     <div className="lex-child-topbar__start">
       {backHref ? (
-        <a
+        <NavigationLink
           className="lex-interactive lex-child-topbar__icon-link"
           href={backHref}
           aria-label={backLabel}
         >
           <ArrowLeft aria-hidden="true" size={21} strokeWidth={2.35} />
-        </a>
+        </NavigationLink>
       ) : null}
       <LexiLandBrand href={brandHref} tagline={brandTagline} compact />
     </div>
@@ -29,18 +50,21 @@ const ChildTopBar = ({
 
     <div className="lex-child-topbar__end">
       {stars !== undefined && stars !== null ? (
-        <span className="lex-child-topbar__stars" aria-label={`${stars} stars`}>
+        <span
+          className="lex-child-topbar__stars"
+          aria-label={starsAriaLabel || `${stars} stars`}
+        >
           <Star aria-hidden="true" size={18} strokeWidth={2.25} />
           <span>{stars}</span>
         </span>
       ) : null}
-      <a
+      <NavigationLink
         className="lex-interactive lex-child-topbar__icon-link"
         href={profileHref}
         aria-label={profileLabel}
       >
         <UserRound aria-hidden="true" size={21} strokeWidth={2.35} />
-      </a>
+      </NavigationLink>
     </div>
   </header>
 );

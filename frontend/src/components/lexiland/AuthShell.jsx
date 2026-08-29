@@ -9,10 +9,11 @@ const AuthShell = ({
   media,
   brandTagline = 'Guardian Console',
   mediaDescription = 'Monitor learning progress in one calm, secure workspace.',
+  workspaceLabel = 'LexiLand guardian workspace',
 }) => (
   <main className="lex-auth-page">
     <section className="lex-auth-shell" aria-labelledby="lex-auth-title">
-      <aside className="lex-auth-shell__media" aria-label="LexiLand guardian workspace">
+      <aside className="lex-auth-shell__media" aria-label={workspaceLabel}>
         <div className="lex-auth-shell__media-art" aria-hidden="true">
           {media || <Map size={72} strokeWidth={1.5} />}
         </div>

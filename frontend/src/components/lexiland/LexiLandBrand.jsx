@@ -1,6 +1,10 @@
+import { Link } from 'react-router-dom';
 import lexilandLogo from '../../assets/lexiland/lexiland-logo.png';
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ');
+
+const isInternalHref = (href) =>
+  typeof href === 'string' && href.startsWith('/') && !href.startsWith('//');
 
 const LexiLandBrand = ({
   href = '/',
@@ -23,6 +27,18 @@ const LexiLandBrand = ({
 
   if (!href) {
     return <div className={classes}>{content}</div>;
+  }
+
+  if (isInternalHref(href)) {
+    return (
+      <Link
+        className={joinClasses(classes, 'lex-interactive')}
+        to={href}
+        aria-label={ariaLabel}
+      >
+        {content}
+      </Link>
+    );
   }
 
   return (
