@@ -294,8 +294,9 @@ function Profile() {
                 ref={photoInputRef}
                 id="profile-photo-input"
                 type="file"
+                aria-hidden="true"
+                hidden
                 tabIndex={-1}
-                className="sr-only"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileChange}
               />
