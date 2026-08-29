@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -83,6 +83,7 @@ function Sidebar({
             <button
               type="button"
               onClick={onMobileClose}
+              data-mobile-drawer-close={mobile ? "true" : undefined}
               className="guardian-focus min-h-11 min-w-11 rounded-[10px] bg-white/[0.10] p-2.5 text-emerald-50"
               aria-label="Close menu"
             >
@@ -106,7 +107,7 @@ function Sidebar({
         )}
       </div>
 
-      <nav ref={mobile ? undefined : sidebarNavRef} className="flex-1 space-y-5 overflow-y-auto px-3 pb-5">
+      <nav ref={sidebarNavRef} className="flex-1 space-y-5 overflow-y-auto px-3 pb-5">
         {menuSections.map((section) => (
           <div key={section.title} className="space-y-2">
             {(!collapsed || mobile) && (
@@ -173,6 +174,10 @@ function AdminLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebarNavRef = useRef(null);
   const sidebarScrollTopRef = useRef(0);
+  const mobileDrawerRef = useRef(null);
+  const mobileMenuButtonRef = useRef(null);
+  const mobileSidebarNavRef = useRef(null);
+  const mobileSidebarScrollTopRef = useRef(0);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_KEY, String(collapsed));
@@ -194,6 +199,87 @@ function AdminLayout({ children }) {
       sidebarScrollTopRef.current = sidebarNavRef.current.scrollTop;
     }
   };
+
+  const rememberMobileSidebarScroll = useCallback(() => {
+    if (mobileSidebarNavRef.current) {
+      mobileSidebarScrollTopRef.current = mobileSidebarNavRef.current.scrollTop;
+    }
+  }, []);
+
+  const closeMobileDrawer = useCallback(() => {
+    rememberMobileSidebarScroll();
+    setMobileOpen(false);
+  }, [rememberMobileSidebarScroll]);
+
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+
+    const drawer = mobileDrawerRef.current;
+    const mobileNav = mobileSidebarNavRef.current;
+    const opener = mobileMenuButtonRef.current;
+    const previousBodyOverflow = document.body.style.overflow;
+    let focusFrame;
+
+    document.body.style.overflow = "hidden";
+
+    const getFocusableElements = () => {
+      if (!drawer) return [];
+      return Array.from(
+        drawer.querySelectorAll(
+          'a[href], button:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => !element.hasAttribute("hidden") && element.getAttribute("aria-hidden") !== "true");
+    };
+
+    focusFrame = window.requestAnimationFrame(() => {
+      if (mobileNav) {
+        mobileNav.scrollTop = mobileSidebarScrollTopRef.current;
+        const activeItem = mobileNav.querySelector('[data-guardian-nav-active="true"]');
+        activeItem?.scrollIntoView({ block: "nearest" });
+      }
+
+      const initialFocus = drawer?.querySelector('[data-mobile-drawer-close="true"]') || drawer;
+      initialFocus?.focus();
+    });
+
+    const handleDrawerKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMobileDrawer();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        drawer?.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && (activeElement === firstElement || !drawer?.contains(activeElement))) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && (activeElement === lastElement || !drawer?.contains(activeElement))) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleDrawerKeyDown);
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown", handleDrawerKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [closeMobileDrawer, mobileOpen]);
 
   const menuSections = useMemo(() => {
     const sections = [
@@ -261,9 +347,14 @@ function AdminLayout({ children }) {
 
   return (
     <div className="guardian-shell min-h-screen overflow-hidden text-[#101828]">
-      <ToastContainer position="top-right" autoClose={3000} />
+      <div
+        className="h-screen"
+        inert={mobileOpen ? "" : undefined}
+        aria-hidden={mobileOpen ? "true" : undefined}
+      >
+        <ToastContainer position="top-right" autoClose={3000} />
 
-      <div className="flex h-screen overflow-hidden">
+        <div className="flex h-full overflow-hidden">
         <div className="hidden shrink-0 lg:block">
           <Sidebar
             collapsed={collapsed}
@@ -273,35 +364,10 @@ function AdminLayout({ children }) {
             sidebarNavRef={sidebarNavRef}
             onRememberScroll={rememberSidebarScroll}
             onCollapseToggle={() => setCollapsed((value) => !value)}
-            onMobileClose={() => setMobileOpen(false)}
+            onMobileClose={closeMobileDrawer}
             onLogout={handleLogout}
           />
         </div>
-
-        {mobileOpen && (
-          <div className="fixed inset-0 z-40 flex lg:hidden">
-            <button
-              type="button"
-              aria-label="Close menu overlay"
-              className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
-              onClick={() => setMobileOpen(false)}
-            />
-            <div className="relative z-10">
-              <Sidebar
-                mobile
-                collapsed={collapsed}
-                isSuperAdmin={isSuperAdmin}
-                menuSections={menuSections}
-                pathname={location.pathname}
-                sidebarNavRef={sidebarNavRef}
-                onRememberScroll={rememberSidebarScroll}
-                onCollapseToggle={() => setCollapsed((value) => !value)}
-                onMobileClose={() => setMobileOpen(false)}
-                onLogout={handleLogout}
-              />
-            </div>
-          </div>
-        )}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 border-b border-[#DCE5E0] bg-white/95 backdrop-blur">
@@ -309,6 +375,7 @@ function AdminLayout({ children }) {
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
+                  ref={mobileMenuButtonRef}
                   onClick={() => setMobileOpen(true)}
                   className="guardian-focus min-h-11 min-w-11 rounded-[10px] bg-[#EAF7F0] p-2.5 text-[#0F5F48] lg:hidden"
                   aria-label="Open Guardian Console menu"
@@ -382,7 +449,43 @@ function AdminLayout({ children }) {
             <div className="mx-auto w-full max-w-[1200px] animate-fade-up">{children}</div>
           </main>
         </div>
+        </div>
       </div>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 flex lg:hidden">
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="Close Guardian Console menu"
+            className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
+            onClick={closeMobileDrawer}
+          />
+          <div
+            ref={mobileDrawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Guardian Console navigation"
+            tabIndex={-1}
+            className="relative z-10 h-full outline-none"
+          >
+            <div className="h-full">
+              <Sidebar
+                mobile
+                collapsed={collapsed}
+                isSuperAdmin={isSuperAdmin}
+                menuSections={menuSections}
+                pathname={location.pathname}
+                sidebarNavRef={mobileSidebarNavRef}
+                onRememberScroll={rememberMobileSidebarScroll}
+                onCollapseToggle={() => setCollapsed((value) => !value)}
+                onMobileClose={closeMobileDrawer}
+                onLogout={handleLogout}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
