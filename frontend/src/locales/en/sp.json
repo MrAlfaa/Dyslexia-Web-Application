@@ -116,6 +116,8 @@
   "ready_label": "Ready",
   "sound": "Sound",
   "choose_sound_gem": "Choose Leo's sound gem",
+  "selection_guide_heading": "Choose your answer",
+  "selection_guide_desc": "Select the word Leo says, then press Check My Answer.",
   "leo_is_listening": "Leo is listening",
   "send_level_desc": "Say the English target clearly. Leo checks the recording after you stop.",
   "recording_not_supported": "Recording is not supported on this device.",

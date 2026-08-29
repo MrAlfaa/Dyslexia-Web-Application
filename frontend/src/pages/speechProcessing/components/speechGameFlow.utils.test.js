@@ -12,6 +12,7 @@ const {
   canUsePromptPlayback,
   createSubmissionFailureFeedback,
   getAutoSubmitDelay,
+  getLeoGuideTranslationKeys,
   getLeoPromptPrimaryAction,
   getSubmissionFailurePresentation,
   getSubmissionRetryLabelKey,
@@ -55,6 +56,21 @@ test("recorded speech progresses only with an explicit valid completion response
 test("selection prompts require an explicit completed and unlocked response", () => {
   assert.equal(canAttemptProgress({ levelCompleted: true, nextPromptUnlocked: true }, { selectionPrompt: true }), true);
   assert.equal(canAttemptProgress({ levelCompleted: true }, { selectionPrompt: true }), false);
+});
+
+test("Leo guide copy matches selection, long-reading, and recording tasks", () => {
+  assert.deepEqual(getLeoGuideTranslationKeys({ selectionPrompt: true }), {
+    headingKey: "selection_guide_heading",
+    descriptionKey: "selection_guide_desc",
+  });
+  assert.deepEqual(getLeoGuideTranslationKeys({ longReadingPrompt: true }), {
+    headingKey: "leo_ready_for_reading",
+    descriptionKey: "sentence_send_desc",
+  });
+  assert.deepEqual(getLeoGuideTranslationKeys(), {
+    headingKey: "leo_is_listening",
+    descriptionKey: "send_level_desc",
+  });
 });
 
 test("a ready recording auto-submits after the child review window", () => {

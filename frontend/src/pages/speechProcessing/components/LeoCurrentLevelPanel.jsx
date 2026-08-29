@@ -3,6 +3,7 @@ import LeoSentencePrompt from "./LeoSentencePrompt";
 import SpeechRecorder from "./SpeechRecorder";
 import {
   canUsePromptPlayback,
+  getLeoGuideTranslationKeys,
   getLeoPromptPrimaryAction,
   getSubmissionRetryLabelKey,
 } from "./speechGameFlow.utils";
@@ -85,6 +86,7 @@ function LeoCurrentLevelPanel({
     feedback,
   });
   const retryLabelKey = getSubmissionRetryLabelKey({ feedback, longReadingPrompt });
+  const guideKeys = getLeoGuideTranslationKeys({ selectionPrompt, longReadingPrompt });
 
   const speakPrompt = () => {
     if (!promptPlaybackAvailable) return;
@@ -199,10 +201,10 @@ function LeoCurrentLevelPanel({
 
         <aside className="rounded-[2rem] bg-white/90 p-5 shadow-xl shadow-emerald-950/10 ring-1 ring-white">
           <p className="text-lg font-black text-slate-950">
-            {longReadingPrompt ? t("leo_ready_for_reading") : t("leo_is_listening")}
+            {t(guideKeys.headingKey)}
           </p>
           <p className="mt-2 text-sm font-bold leading-6 text-slate-600">
-            {longReadingPrompt ? t("sentence_send_desc") : t("send_level_desc")}
+            {t(guideKeys.descriptionKey)}
           </p>
 
           {error && (

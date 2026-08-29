@@ -12,6 +12,28 @@ export const canAttemptProgress = (result = {}, { selectionPrompt = false } = {}
   result.retryRequired !== true &&
   (selectionPrompt || result.validAudio === true);
 
+export const getLeoGuideTranslationKeys = ({
+  selectionPrompt = false,
+  longReadingPrompt = false,
+} = {}) => {
+  if (selectionPrompt) {
+    return {
+      headingKey: "selection_guide_heading",
+      descriptionKey: "selection_guide_desc",
+    };
+  }
+  if (longReadingPrompt) {
+    return {
+      headingKey: "leo_ready_for_reading",
+      descriptionKey: "sentence_send_desc",
+    };
+  }
+  return {
+    headingKey: "leo_is_listening",
+    descriptionKey: "send_level_desc",
+  };
+};
+
 export const getAutoSubmitDelay = ({ recording, submitting = false, feedback = null } = {}) => {
   if (!recording?.audioBlob || submitting || feedback) return null;
   return 2000;
