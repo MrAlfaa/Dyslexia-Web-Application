@@ -96,6 +96,83 @@
   "enter_full_name": "ඔබේ සම්පූර්ණ නම ඇතුළත් කරන්න",
   "enter_school_name": "ඔබේ පාසල් නම ඇතුළත් කරන්න",
   "readonly_email": "Email එක මෙහි වෙනස් කළ නොහැක",
+  "journey": {
+    "adventurer": "ගවේෂකයා",
+    "dashboardKicker": "ඔයාගේ LexiLand ගවේෂණය",
+    "greeting": "ආයුබෝවන්, {{name}}!",
+    "dashboardSubtitle": "{{grade}} ශ්‍රේණියට අදාළ ගමන් ඔයාට සූදානම්.",
+    "openProfile": "පැතිකඩ විවෘත කරන්න",
+    "starsAriaLabel": "එකතු කළ තරු ගණන {{count}}යි",
+    "viewLeoProgress": "Leoගේ Sound Safari විවෘත කරන්න",
+    "loading": "ඔයාගේ ගවේෂණ සිතියම සූදානම් කරමින්...",
+    "loadErrorTitle": "ඔයාගේ සිතියම පූරණය වුණේ නැහැ",
+    "loadErrorDescription": "සම්බන්ධතාව පරීක්ෂා කරලා Leoට නැවත උත්සාහ කරන්න කියන්න.",
+    "tryAgain": "නැවත උත්සාහ කරන්න",
+    "currentMission": "දැන් කරන්න තියෙන ගමන",
+    "leoAlt": "දැන් කරන්න තියෙන ගමනට ඔයාව පිළිගන්න Leo සිංහයා",
+    "starsCount": "තරු {{count}}යි",
+    "developmentPreview": "සංවර්ධන පෙරදසුන සක්‍රීයයි",
+    "identificationEyebrow": "මුලින් ගවේෂණය කරමු",
+    "identificationTitle": "හඳුනාගැනීමේ ගවේෂණය",
+    "identificationHint": "ආරම්භ කරන්න තැනක් තෝරන්න.",
+    "improvementEyebrow": "පුහුණු මඟ",
+    "improvementTitle": "දියුණු වීමේ ගමන",
+    "progressTitle": "Leoගේ ශබ්ද ගමන",
+    "progressDescription": "Leoගේ අලුත් Sound Safari තුළ ඊළඟ ක්‍රියාකාරකම, සම්පූර්ණ කළ ක්‍රීඩා සහ තරු බලන්න.",
+    "states": {
+      "available": "සූදානම්",
+      "current": "දැන් කළ යුතුයි",
+      "completed": "සම්පූර්ණයි",
+      "locked": "තවම විවෘත නැහැ"
+    },
+    "actions": {
+      "startCheck": "පරීක්ෂාව අරඹන්න",
+      "continueCheck": "පරීක්ෂාව දිගටම කරන්න",
+      "viewSpeechPath": "ශබ්ද ගමන බලන්න",
+      "startPractice": "පුහුණුව අරඹන්න",
+      "continueAdventure": "ගමන දිගටම කරන්න",
+      "replayPractice": "නැවත ක්‍රීඩා කරන්න"
+    },
+    "lockReasons": {
+      "completeRequiredCheck": "මේ පුහුණු මඟ විවෘත කරන්න ඒකට අදාළ පරීක්ෂාව සම්පූර්ණ කරන්න.",
+      "completeSpeechCheck": "Training Safari විවෘත කරන්න Leoගේ පළමු ශබ්ද පරීක්ෂාව අවසන් කරන්න.",
+      "speechBaselineReview": "Leo ඔයාගේ ශබ්ද ගමන සූදානම් කරනවා. ටිකකින් නැවත බලන්න."
+    },
+    "activities": {
+      "firstSoundHunt": "First Sound Hunt",
+      "echoRoar": "Echo Roar",
+      "robotWords": "Robot Word Safari",
+      "soundTwins": "Sound Twins",
+      "storyTrail": "Story Roar Trail",
+      "nextLeoGame": "ඔයාගේ ඊළඟ Leo ක්‍රීඩාව"
+    },
+    "destinations": {
+      "wm": {
+        "identificationTitle": "Bunnyගේ මතක පරීක්ෂාව",
+        "identificationDescription": "Bunny සමඟ කෙටි රටා මතක තබාගන්න.",
+        "improvementTitle": "Bunnyගේ මතක මඟ",
+        "improvementDescription": "පියවර සහ රටා මතක තබාගැනීම පුහුණු කරන්න."
+      },
+      "pa": {
+        "identificationTitle": "Parrotගේ ශබ්ද පරීක්ෂාව",
+        "identificationDescription": "Parrot සමඟ ශබ්දවලට සවන් දෙන්න.",
+        "improvementTitle": "Parrotගේ ශබ්ද උයන",
+        "improvementDescription": "ශබ්ද ගැළපීම සහ වෙනස් කිරීම පුහුණු කරන්න."
+      },
+      "rp": {
+        "identificationTitle": "Owlගේ කියවීම් පරීක්ෂාව",
+        "identificationDescription": "Owl සමඟ අකුරු සහ වචන ගවේෂණය කරන්න.",
+        "improvementTitle": "Owlගේ කියවීම් මඟ",
+        "improvementDescription": "කියවීම් රටා සහ වචන පුහුණු කරන්න."
+      },
+      "sp": {
+        "identificationTitle": "Leoගේ පළමු ශබ්ද පරීක්ෂාව",
+        "identificationDescription": "Leo සමඟ වචන සහ වාක්‍ය හඬින් කියවන්න.",
+        "improvementTitle": "Leoගේ Training Safari",
+        "improvementDescription": "ඊළඟට තියෙන්නේ {{activity}}. ඔයා Safari ක්‍රීඩා {{completed}}ක් සම්පූර්ණ කරලා තියෙනවා."
+      }
+    }
+  },
   "public": {
     "brandTitle": "LexiLand",
     "brandTagline": "කැලෑ ඉගෙනුම් ගමන",

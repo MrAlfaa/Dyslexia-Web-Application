@@ -96,6 +96,83 @@
   "enter_full_name": "Enter your full name",
   "enter_school_name": "Enter your school name",
   "readonly_email": "Email cannot be changed here",
+  "journey": {
+    "adventurer": "explorer",
+    "dashboardKicker": "Your LexiLand Expedition",
+    "greeting": "Hello, {{name}}!",
+    "dashboardSubtitle": "Grade {{grade}} adventures are ready for you.",
+    "openProfile": "Open profile",
+    "starsAriaLabel": "{{count}} stars collected",
+    "viewLeoProgress": "Open Leo's Sound Safari",
+    "loading": "Preparing your expedition map...",
+    "loadErrorTitle": "Your map did not load",
+    "loadErrorDescription": "Check your connection, then ask Leo to try again.",
+    "tryAgain": "Try again",
+    "currentMission": "Current mission",
+    "leoAlt": "Leo the lion welcomes you to the current mission",
+    "starsCount": "{{count}} stars",
+    "developmentPreview": "Development preview enabled",
+    "identificationEyebrow": "Explore first",
+    "identificationTitle": "Identification Expedition",
+    "identificationHint": "Choose a destination to begin.",
+    "improvementEyebrow": "Practice trail",
+    "improvementTitle": "Improvement Adventure",
+    "progressTitle": "Leo's sound journey",
+    "progressDescription": "See the next activity, completed games, and stars in Leo's modern Sound Safari.",
+    "states": {
+      "available": "Ready",
+      "current": "Current",
+      "completed": "Completed",
+      "locked": "Locked"
+    },
+    "actions": {
+      "startCheck": "Start check",
+      "continueCheck": "Continue check",
+      "viewSpeechPath": "View sound path",
+      "startPractice": "Start practice",
+      "continueAdventure": "Continue adventure",
+      "replayPractice": "Play again"
+    },
+    "lockReasons": {
+      "completeRequiredCheck": "Complete the matching check to open this practice trail.",
+      "completeSpeechCheck": "Finish Leo's First Sound Check to open Training Safari.",
+      "speechBaselineReview": "Leo is preparing your sound path. Please try again soon."
+    },
+    "activities": {
+      "firstSoundHunt": "First Sound Hunt",
+      "echoRoar": "Echo Roar",
+      "robotWords": "Robot Word Safari",
+      "soundTwins": "Sound Twins",
+      "storyTrail": "Story Roar Trail",
+      "nextLeoGame": "Your next Leo game"
+    },
+    "destinations": {
+      "wm": {
+        "identificationTitle": "Bunny Memory Check",
+        "identificationDescription": "Remember short patterns with Bunny.",
+        "improvementTitle": "Bunny Memory Trail",
+        "improvementDescription": "Practice remembering steps and patterns."
+      },
+      "pa": {
+        "identificationTitle": "Parrot Sound Check",
+        "identificationDescription": "Listen for sounds with Parrot.",
+        "improvementTitle": "Parrot Sound Garden",
+        "improvementDescription": "Practice matching and changing sounds."
+      },
+      "rp": {
+        "identificationTitle": "Owl Reading Check",
+        "identificationDescription": "Explore letters and words with Owl.",
+        "improvementTitle": "Owl Reading Trail",
+        "improvementDescription": "Practice reading patterns and words."
+      },
+      "sp": {
+        "identificationTitle": "Leo's First Sound Check",
+        "identificationDescription": "Read words and sentences aloud with Leo.",
+        "improvementTitle": "Leo's Training Safari",
+        "improvementDescription": "{{activity}} is next. You have completed {{completed}} safari games."
+      }
+    }
+  },
   "public": {
     "brandTitle": "LexiLand",
     "brandTagline": "Jungle learning adventure",
