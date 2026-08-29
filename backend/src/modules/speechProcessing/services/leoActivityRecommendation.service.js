@@ -1,4 +1,5 @@
 const systemSpeechActivities = require("../data/systemSpeechActivities");
+const { getRecommendationSignals } = require("./leoRecommendationSignals.service");
 
 const supportSequences = {
   high_support: [
@@ -71,55 +72,15 @@ const normalizeProgress = (speech = {}) =>
     starsEarned: item.starsEarned ?? item.stars ?? 0,
   }));
 
-const getPerformanceSignals = (attempts = []) => {
-  const total = attempts.length;
-  const valid = attempts.filter((attempt) => attempt.validAudio);
-  const invalidOrPoor = attempts.filter(
-    (attempt) =>
-      !attempt.validAudio ||
-      ["invalid", "poor"].includes(attempt.audioQuality?.qualityLabel)
-  );
-  const pseudoword = attempts.filter((attempt) => attempt.taskType === "pseudoword_read");
-  const selection = attempts.filter((attempt) =>
-    ["first_sound", "minimal_pair"].includes(attempt.taskType)
-  );
-  const sentence = attempts.filter((attempt) => attempt.taskType === "sentence_read");
-  const meanScore = (items) =>
-    items.length
-      ? items.reduce(
-          (sum, attempt) =>
-            sum +
-            Number(
-              attempt.features?.pronunciationScorePlaceholder ||
-                attempt.itemResult?.pronunciationScore ||
-                0
-            ),
-          0
-        ) / items.length
-      : undefined;
-
-  return {
-    totalAttemptCount: total,
-    validAttemptCount: valid.length,
-    invalidPoorRate: total ? invalidOrPoor.length / total : 0,
-    pseudowordScore: meanScore(pseudoword),
-    selectionScore: meanScore(selection),
-    sentenceScore: meanScore(sentence),
-    retryRate: total
-      ? attempts.filter((attempt) => Number(attempt.attemptNo || 1) > 1).length / total
-      : 0,
-  };
-};
-
 const getReasonOverride = (signals) => {
   if (signals.invalidPoorRate > 0.5) return { reasonCode: "audio_quality", activityId: "leo_echo_roar" };
-  if (signals.pseudowordScore !== undefined && signals.pseudowordScore < 0.58) {
+  if (signals.pseudowordSimilarity !== undefined && signals.pseudowordSimilarity < 0.58) {
     return { reasonCode: "pseudoword_weak", activityId: "leo_robot_words" };
   }
-  if (signals.selectionScore !== undefined && signals.selectionScore < 0.6) {
+  if (signals.selectionAccuracy !== undefined && signals.selectionAccuracy < 0.6) {
     return { reasonCode: "selection_weak", activityId: "leo_first_sound_hunt" };
   }
-  if (signals.sentenceScore !== undefined && signals.sentenceScore < 0.6) {
+  if (signals.sentenceCoverage !== undefined && signals.sentenceCoverage < 0.6) {
     return { reasonCode: "fluency_weak", activityId: "leo_story_roar" };
   }
   return null;
@@ -135,7 +96,7 @@ const getActivityPlan = ({ speech = {}, recentAttempts = [] } = {}) => {
   const completedSet = new Set(speech.completedActivityIds || []);
   const progress = normalizeProgress(speech);
   const sequence = supportSequences[supportLevel] || supportSequences.unknown;
-  const signals = getPerformanceSignals(recentAttempts);
+  const signals = getRecommendationSignals(recentAttempts);
   const override = getReasonOverride(signals);
   let reasonCode = "sequence_next";
   let nextActivityId = chooseFromSequence({
