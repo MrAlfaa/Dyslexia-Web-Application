@@ -137,6 +137,36 @@ test("every activity start overlay resolves title, guide, and collectible labels
   assert.doesNotMatch(rewardSource, /Final Reward|Jungle Sound Badge|stars collected|Finish every level/);
 });
 
+test("every literal Leo map, node, and reward translation key exists in both locales", () => {
+  const english = JSON.parse(readSiblingSource("../../../locales/en/sp.json"));
+  const sinhala = JSON.parse(readSiblingSource("../../../locales/si/sp.json"));
+  const componentSources = [
+    readSiblingSource("./LeoLevelMap.jsx"),
+    readSiblingSource("./LeoLevelNode.jsx"),
+    readSiblingSource("./LeoRewardChest.jsx"),
+  ];
+  const literalTranslationKeys = new Set(
+    componentSources.flatMap((source) =>
+      [...source.matchAll(/\bt\(\s*["']([^"']+)["']/g)].map((match) => match[1])),
+  );
+
+  assert.ok(literalTranslationKeys.size > 0);
+  for (const translationKey of literalTranslationKeys) {
+    for (const [localeName, locale] of [["English", english], ["Sinhala", sinhala]]) {
+      assert.equal(
+        Object.hasOwn(locale, translationKey),
+        true,
+        `${localeName} locale is missing ${translationKey}`,
+      );
+      assert.equal(
+        typeof locale[translationKey] === "string" && locale[translationKey].trim().length > 0,
+        true,
+        `${localeName} locale has an empty ${translationKey} translation`,
+      );
+    }
+  }
+});
+
 test("selection API failures use selection retry copy and action", () => {
   for (const taskType of ["first_sound", "minimal_pair"]) {
     assert.deepEqual(getSubmissionFailurePresentation({ taskType }), {
