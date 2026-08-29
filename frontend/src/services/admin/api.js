@@ -42,6 +42,11 @@ export const createStudentByAdmin = (data) => AdminAPI.post("/admin/students", d
 export const updateAdminStudent = (id, data) =>
   AdminAPI.put(`/admin/students/${id}`, data);
 
+export const getAssignableAdminGuardians = () => AdminAPI.get("/admin/guardians");
+
+export const repairAdminStudentOwnership = (id, guardianId) =>
+  AdminAPI.put(`/admin/students/${id}/owner`, { guardianId });
+
 export const deleteAdminStudent = (id) => AdminAPI.delete(`/admin/students/${id}`);
 
 export const getGuardianChildren = () => AdminAPI.get("/guardian/children");

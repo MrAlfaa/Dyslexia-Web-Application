@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import {
   createStudentByAdmin,
   deleteAdminStudent,
+  getAssignableAdminGuardians,
   getAdminStudents,
   getMySubscription,
+  repairAdminStudentOwnership,
   updateAdminStudent,
 } from "../../../services/admin/api";
 import GuardianPageHeader from "../../../components/guardian/ui/GuardianPageHeader";
@@ -112,6 +114,153 @@ function ChildFormModal({ mode, student, onClose, onSubmit }) {
   );
 }
 
+function OwnershipRepairModal({ student, onClose, onRepaired }) {
+  const [guardians, setGuardians] = useState([]);
+  const [selectedGuardianId, setSelectedGuardianId] = useState("");
+  const [loadingGuardians, setLoadingGuardians] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const guardianRequestSequence = useRef(0);
+
+  const loadGuardians = useCallback(async () => {
+    const requestId = guardianRequestSequence.current + 1;
+    guardianRequestSequence.current = requestId;
+    setLoadingGuardians(true);
+    setLoadError("");
+    try {
+      const response = await getAssignableAdminGuardians();
+      if (guardianRequestSequence.current !== requestId) return;
+      const available = (response.data?.data || []).filter(
+        (guardian) => guardian.subscriptionStatus !== "inactive",
+      );
+      setGuardians(available);
+    } catch (error) {
+      if (guardianRequestSequence.current !== requestId) return;
+      setLoadError(error.response?.data?.message || "Could not load guardian accounts.");
+    } finally {
+      if (guardianRequestSequence.current === requestId) setLoadingGuardians(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadGuardians();
+
+    return () => {
+      guardianRequestSequence.current += 1;
+    };
+  }, [loadGuardians]);
+
+  const selectedGuardian = guardians.find(
+    (guardian) => guardian.id === selectedGuardianId,
+  );
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!selectedGuardian) return;
+
+    setSaving(true);
+    try {
+      const response = await repairAdminStudentOwnership(student._id, selectedGuardian.id);
+      toast.success(response.data?.message || "Child ownership updated");
+      await onRepaired();
+      onClose();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not update child ownership");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <GuardianModal
+      title="Repair Child Ownership"
+      subtitle="Super-admin action. The selected guardian becomes the owner in both ownership records."
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="rounded-2xl border border-[#E5EDE7] bg-[#F8FAF9] p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5B6475]">
+            Child account
+          </p>
+          <p className="mt-1 text-base font-bold text-[#101828]">{student.fullName}</p>
+          <p className="mt-1 text-sm font-medium text-[#5B6475]">
+            @{student.username || "no-username"} · Grade {student.grade || "-"}
+          </p>
+        </div>
+
+        <Field label="Destination guardian">
+          <select
+            className={inputClass}
+            value={selectedGuardianId}
+            onChange={(event) => setSelectedGuardianId(event.target.value)}
+            disabled={loadingGuardians || saving}
+            required
+          >
+            <option value="">
+              {loadingGuardians ? "Loading guardian accounts..." : "Select a guardian"}
+            </option>
+            {guardians.map((guardian) => (
+              <option key={guardian.id} value={guardian.id}>
+                {guardian.fullName} · {guardian.email} · {guardian.role}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        {loadError && (
+          <div role="alert" className="rounded-2xl border border-[#F4C7C7] bg-[#FFF4F3] p-4 text-sm font-semibold text-[#B42318]">
+            <p>{loadError}</p>
+            <GuardianButton
+              variant="secondary"
+              className="mt-3"
+              onClick={loadGuardians}
+              disabled={loadingGuardians}
+            >
+              {loadingGuardians ? "Retrying..." : "Retry guardian list"}
+            </GuardianButton>
+          </div>
+        )}
+
+        {!loadingGuardians && !loadError && guardians.length === 0 && (
+          <p role="status" className="rounded-2xl border border-[#EAD9A8] bg-[#FFF9E8] p-4 text-sm font-semibold text-[#8A5A00]">
+            No active or trial guardian accounts are available.
+          </p>
+        )}
+
+        {selectedGuardian && (
+          <div className="rounded-2xl border border-[#D8ECE3] bg-[#F3FBF7] p-4 text-sm text-[#23483C]">
+            <p className="font-bold">Confirm ownership destination</p>
+            <p className="mt-1 leading-6">
+              Assign <strong>{student.fullName}</strong> to <strong>{selectedGuardian.fullName}</strong>
+              {" "}({selectedGuardian.email}). Existing child activity and progress stay unchanged.
+            </p>
+            <p className="mt-2 text-xs font-semibold text-[#5B6475]">
+              The server will reject inactive accounts or destinations that have reached their child limit.
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <GuardianButton variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </GuardianButton>
+          <GuardianButton type="submit" disabled={!selectedGuardian || saving || loadingGuardians}>
+            {saving ? "Updating owner..." : "Confirm owner repair"}
+          </GuardianButton>
+        </div>
+      </form>
+    </GuardianModal>
+  );
+}
+
+const getStoredAdminRole = () => {
+  try {
+    return JSON.parse(localStorage.getItem("adminUser") || "{}").role || "";
+  } catch {
+    return "";
+  }
+};
+
 function StudentProfiles() {
   const [students, setStudents] = useState([]);
   const [subscription, setSubscription] = useState(null);
@@ -119,7 +268,9 @@ function StudentProfiles() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [ownershipRepair, setOwnershipRepair] = useState(null);
   const [createdUsername, setCreatedUsername] = useState("");
+  const isSuperAdmin = getStoredAdminRole() === "super admin";
 
   const load = async () => {
     try {
@@ -252,6 +403,11 @@ function StudentProfiles() {
                   <GuardianButton variant="secondary" onClick={() => setModal({ mode: "edit", student })}>
                     Edit
                   </GuardianButton>
+                  {isSuperAdmin && (
+                    <GuardianButton variant="secondary" onClick={() => setOwnershipRepair(student)}>
+                      Repair owner
+                    </GuardianButton>
+                  )}
                   <GuardianButton variant="danger" onClick={() => setDeleteConfirm(student)}>
                     Deactivate
                   </GuardianButton>
@@ -292,6 +448,13 @@ function StudentProfiles() {
           student={modal.student}
           onClose={() => setModal(null)}
           onSubmit={(formData) => handleUpdate(modal.student._id, formData)}
+        />
+      )}
+      {ownershipRepair && (
+        <OwnershipRepairModal
+          student={ownershipRepair}
+          onClose={() => setOwnershipRepair(null)}
+          onRepaired={load}
         />
       )}
       {deleteConfirm && (

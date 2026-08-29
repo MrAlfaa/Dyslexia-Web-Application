@@ -14,6 +14,11 @@ const {
 const {
   validateProfilePhotoDataUrl,
 } = require("../../common/services/profilePhotoValidation.service");
+const {
+  ChildOwnershipError,
+  listAssignableGuardians,
+  repairChildOwnership,
+} = require("../services/childOwnership.service");
 
 const isSuperAdminRequest = (req) => req.user?.role === "super admin";
 
@@ -110,6 +115,46 @@ exports.getAllStudents = async (req, res) => {
   } catch (error) {
     console.error("Get all students error:", error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+exports.getAssignableGuardians = async (_req, res) => {
+  try {
+    const guardians = await listAssignableGuardians();
+    res.status(200).json({ success: true, data: guardians });
+  } catch (error) {
+    console.error("Get assignable guardians error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+exports.repairStudentOwnership = async (req, res) => {
+  try {
+    const destinationGuardianId = req.body?.guardianId;
+    const result = await repairChildOwnership({
+      childId: req.params.id,
+      destinationGuardianId,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: result.changed
+        ? "Child ownership updated successfully"
+        : "Child is already assigned to this guardian",
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof ChildOwnershipError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        code: error.code,
+        message: error.message,
+        ...(error.details ? { data: error.details } : {}),
+      });
+    }
+
+    console.error("Repair child ownership error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
