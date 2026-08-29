@@ -6,6 +6,7 @@ import leoImage from "../../../assets/lexiland/leo-lion.webp";
 import LeoSafariCheckpointShrine from "./LeoSafariCheckpointShrine";
 import LeoSafariTerrain from "./LeoSafariTerrain";
 import LeoSafariZone from "./LeoSafariZone";
+import { getSafariRenderSettings } from "./leoSafariPerformance.utils";
 
 const SAFARI_ZONE_LAYOUT = [
   { activityId: "leo_first_sound_hunt", position: [-5.2, 0.18, 2.5] },
@@ -43,7 +44,7 @@ class SafariCanvasBoundary extends Component {
   }
 }
 
-function GuidedCamera({ focusedActivityId, paused }) {
+function GuidedCamera({ focusedActivityId, paused, quality }) {
   const focusedPosition = ZONE_POSITIONS.get(focusedActivityId);
 
   useFrame(({ camera }, delta) => {
@@ -55,6 +56,12 @@ function GuidedCamera({ focusedActivityId, paused }) {
     } else {
       CAMERA_POSITION.copy(OVERVIEW_POSITION);
       CAMERA_TARGET.copy(OVERVIEW_TARGET);
+    }
+
+    if (quality === "low") {
+      camera.position.copy(CAMERA_POSITION);
+      camera.lookAt(CAMERA_TARGET);
+      return;
     }
 
     const smoothing = 1 - Math.exp(-Math.min(delta, 0.05) * 3.8);
@@ -78,7 +85,7 @@ function LeoBillboard({ position }) {
   );
 }
 
-function SafariScene({ zones, focusedActivityId, active, recording }) {
+function SafariScene({ zones, focusedActivityId, active, recording, quality, effects }) {
   const completedCount = zones.filter((zone) => zone.state === "replay").length;
   const leoPosition = useMemo(() => {
     const focused = ZONE_POSITIONS.get(focusedActivityId) || SAFARI_ZONE_LAYOUT[0].position;
@@ -88,10 +95,10 @@ function SafariScene({ zones, focusedActivityId, active, recording }) {
   return (
     <>
       <color attach="background" args={["#a7d9bc"]} />
-      <fog attach="fog" args={["#a7d9bc", 11, 24]} />
+      {effects ? <fog attach="fog" args={["#a7d9bc", 11, 24]} /> : null}
       <hemisphereLight intensity={1.05} color="#fff8dc" groundColor="#245b42" />
       <directionalLight
-        castShadow
+        castShadow={quality === "standard" && !recording}
         position={[-5, 10, 7]}
         intensity={1.45}
         shadow-mapSize-width={1024}
@@ -103,7 +110,11 @@ function SafariScene({ zones, focusedActivityId, active, recording }) {
         shadow-camera-bottom={-8}
       />
 
-      <GuidedCamera focusedActivityId={focusedActivityId} paused={!active || recording} />
+      <GuidedCamera
+        focusedActivityId={focusedActivityId}
+        paused={!active || recording}
+        quality={quality}
+      />
       <LeoSafariTerrain zoneLayout={SAFARI_ZONE_LAYOUT} />
 
       {SAFARI_ZONE_LAYOUT.map(({ activityId, position }) => {
@@ -144,25 +155,32 @@ function LeoSafari3DMap({
   recording = false,
   active = true,
   fallback = null,
+  quality = "standard",
 }) {
-  const paused = recording || !active;
+  const renderSettings = getSafariRenderSettings({ quality, recording, active });
 
   return (
     <SafariCanvasBoundary fallback={fallback}>
       <Canvas
         aria-hidden="true"
         camera={{ position: [0, 9.6, 10.8], fov: 43, near: 0.1, far: 40 }}
-        dpr={[1, 1.5]}
+        dpr={renderSettings.dpr}
         fallback={fallback}
-        frameloop={paused ? "demand" : "always"}
-        gl={{ alpha: false, antialias: true, powerPreference: "high-performance" }}
-        shadows={!recording}
+        frameloop={renderSettings.frameloop}
+        gl={{
+          alpha: false,
+          antialias: renderSettings.antialias,
+          powerPreference: renderSettings.powerPreference,
+        }}
+        shadows={renderSettings.shadows}
       >
         <SafariScene
           zones={zones}
           focusedActivityId={focusedActivityId}
           active={active}
           recording={recording}
+          quality={quality}
+          effects={renderSettings.effects}
         />
       </Canvas>
     </SafariCanvasBoundary>

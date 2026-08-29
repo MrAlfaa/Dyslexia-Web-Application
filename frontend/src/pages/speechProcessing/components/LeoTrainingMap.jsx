@@ -1,7 +1,9 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, LockKeyhole, MapPin, RotateCcw, Star } from "lucide-react";
+import leoImage from "../../../assets/lexiland/leo-lion.webp";
 import trainingBackground from "../../../assets/lexiland/leo-training-map-bg.webp";
+import { getSafariQuality } from "./leoSafariPerformance.utils";
 import { buildSafariPresentation } from "./leoSafariPresentation.utils";
 
 const LeoSafari3DMap = lazy(() => import("./LeoSafari3DMap"));
@@ -12,6 +14,105 @@ const getStateIcon = (zone) => {
   if (zone.isPrimary) return MapPin;
   return CheckCircle2;
 };
+
+const supportsWebGL = () => {
+  if (typeof document === "undefined") return false;
+
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(
+      window.WebGLRenderingContext &&
+        (canvas.getContext("webgl2") || canvas.getContext("webgl"))
+    );
+  } catch {
+    return false;
+  }
+};
+
+const readSafariCapabilities = () => {
+  if (typeof window === "undefined") {
+    return { webgl: false, reducedMotion: true, deviceMemory: undefined, viewportWidth: 0 };
+  }
+
+  return {
+    webgl: supportsWebGL(),
+    reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || false,
+    deviceMemory: navigator.deviceMemory,
+    viewportWidth: window.innerWidth,
+  };
+};
+
+function LeoSafari2DFallback({
+  zones,
+  focusedActivityId,
+  locked,
+  onFocus,
+  onSelect,
+  t,
+}) {
+  return (
+    <div
+      className="relative h-full w-full overflow-hidden bg-emerald-900 bg-cover bg-center"
+      style={{ backgroundImage: `url(${trainingBackground})` }}
+      role="group"
+      aria-label={t("training_map_heading")}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/10 via-emerald-900/5 to-emerald-950/75" />
+      <img
+        src={leoImage}
+        alt=""
+        aria-hidden="true"
+        className="absolute bottom-36 right-3 hidden h-40 w-auto drop-shadow-2xl sm:block lg:bottom-28 lg:right-8 lg:h-52"
+      />
+
+      <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-2 sm:inset-x-5 sm:grid-cols-5">
+        {zones.map((zone, index) => {
+          const StateIcon = getStateIcon(zone);
+          const stateLabel = t(zone.stateLabelKey);
+          const canPlay = !locked && (zone.isPrimary || Boolean(zone.replayAction));
+          const lockReason =
+            zone.state === "locked"
+              ? zone.lockReason || t("safari_locked_reason_fallback")
+              : null;
+          const isFocused = focusedActivityId === zone.activityId;
+
+          return (
+            <button
+              key={`${zone.activityId || "unknown"}-fallback-${index}`}
+              type="button"
+              onClick={() => {
+                onFocus(zone.activityId);
+                if (canPlay) onSelect(zone);
+              }}
+              disabled={!canPlay}
+              className={`min-h-16 min-w-0 rounded-lg border px-2 py-2 text-left shadow-lg outline-none transition focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-950 sm:min-h-20 ${
+                isFocused
+                  ? "border-amber-300 bg-amber-50 text-slate-950 ring-2 ring-amber-300"
+                  : canPlay
+                    ? "border-white/40 bg-white/95 text-slate-950 hover:bg-amber-50"
+                    : "cursor-not-allowed border-white/20 bg-slate-100/90 text-slate-500"
+              }`}
+              aria-label={`${zone.shortTitle || zone.title}. ${stateLabel}${
+                lockReason ? `. ${lockReason}` : ""
+              }`}
+            >
+              <span className="flex items-center justify-between gap-1 text-[0.65rem] font-black uppercase text-emerald-700">
+                {t("zone_number", { number: index + 1 })}
+                <StateIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
+              </span>
+              <span className="mt-1 block truncate text-xs font-black sm:text-sm">
+                {zone.shortTitle || zone.title}
+              </span>
+              <span className="mt-0.5 block truncate text-[0.65rem] font-bold sm:text-xs">
+                {stateLabel}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function LeoTrainingMap({
   activities = [],
@@ -24,6 +125,7 @@ function LeoTrainingMap({
   recording = false,
 }) {
   const { t } = useTranslation("sp");
+  const [capabilities, setCapabilities] = useState(readSafariCapabilities);
   const presentation = useMemo(
     () => buildSafariPresentation({ activities, recommendation, checkpointDue }),
     [activities, checkpointDue, recommendation]
@@ -45,11 +147,34 @@ function LeoTrainingMap({
       ? focusSelection.activityId
       : defaultFocus;
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const motionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const updateCapabilities = () => setCapabilities(readSafariCapabilities());
+
+    window.addEventListener("resize", updateCapabilities);
+    motionQuery?.addEventListener?.("change", updateCapabilities);
+
+    return () => {
+      window.removeEventListener("resize", updateCapabilities);
+      motionQuery?.removeEventListener?.("change", updateCapabilities);
+    };
+  }, []);
+
+  const quality = getSafariQuality({ ...capabilities, recording });
+  const selectFocus = (activityId) => {
+    setFocusSelection({ activityId, primaryActivityId });
+  };
+
   const fallback = (
-    <div
-      className="h-full w-full bg-cover bg-center"
-      style={{ backgroundImage: `url(${trainingBackground})` }}
-      aria-hidden="true"
+    <LeoSafari2DFallback
+      zones={zones}
+      focusedActivityId={focusedActivityId}
+      locked={locked}
+      onFocus={selectFocus}
+      onSelect={onSelect}
+      t={t}
     />
   );
 
@@ -57,15 +182,20 @@ function LeoTrainingMap({
     <section className="overflow-hidden rounded-lg bg-emerald-950 shadow-2xl shadow-emerald-950/20">
       <div className="relative h-[30rem] min-h-[30rem] sm:h-[34rem] lg:h-[min(66vh,46rem)]">
         <div className="absolute inset-0">
-          <Suspense fallback={fallback}>
-            <LeoSafari3DMap
-              zones={zones}
-              focusedActivityId={focusedActivityId}
-              recording={recording}
-              fallback={fallback}
-              active={active}
-            />
-          </Suspense>
+          {quality === "fallback" ? (
+            fallback
+          ) : (
+            <Suspense fallback={fallback}>
+              <LeoSafari3DMap
+                zones={zones}
+                focusedActivityId={focusedActivityId}
+                recording={recording}
+                fallback={fallback}
+                active={active}
+                quality={quality}
+              />
+            </Suspense>
+          )}
         </div>
 
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-emerald-950/90 via-emerald-950/60 to-transparent p-5 pb-24 text-white sm:p-8">
@@ -114,10 +244,7 @@ function LeoTrainingMap({
               >
                 <button
                   type="button"
-                  onClick={() => setFocusSelection({
-                    activityId: zone.activityId,
-                    primaryActivityId,
-                  })}
+                  onClick={() => selectFocus(zone.activityId)}
                   className="min-h-11 w-full rounded-md px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2"
                   aria-pressed={isFocused}
                   aria-label={`${zone.shortTitle || zone.title}. ${stateLabel}. ${t("stars", { count: zoneStars })}${
