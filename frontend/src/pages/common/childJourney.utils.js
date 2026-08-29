@@ -145,11 +145,17 @@ export const buildChildJourney = ({ profile = {}, devUnlock = false } = {}) => {
   };
   improvement.push(speechImprovement);
 
+  const missionCandidates = [
+    speechIdentification,
+    speechImprovement,
+    ...identification.filter((destination) => destination.id !== "sp"),
+    ...improvement.filter((destination) => destination.id !== "sp"),
+  ];
   const currentMission =
-    (speechIdentification.state === "current" && speechIdentification) ||
-    (speechImprovement.state === "current" && speechImprovement) ||
-    (speechIdentification.state === "available" && speechIdentification) ||
-    speechImprovement;
+    missionCandidates.find((destination) => destination.state === "current") ||
+    missionCandidates.find((destination) => destination.state === "available") ||
+    missionCandidates.find((destination) => destination.state === "locked") ||
+    missionCandidates[0];
 
   return {
     identification,

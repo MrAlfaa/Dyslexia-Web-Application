@@ -77,6 +77,28 @@ test("legacy overall unlock does not unlock speech without its own baseline flag
   assert.equal(findDestination(journey, "improvement", "sp").state, "locked");
 });
 
+test("current mission uses an available standard check while speech baseline review is locked", () => {
+  const journey = buildChildJourney({
+    profile: {
+      grade: "3",
+      lexilandProgress: {
+        improvementUnlocked: false,
+        speech: {
+          identificationStatus: "completed",
+          improvementUnlocked: false,
+        },
+      },
+    },
+    devUnlock: false,
+  });
+
+  assert.equal(findDestination(journey, "improvement", "sp").state, "locked");
+  assert.equal(journey.currentMission.id, "wm");
+  assert.equal(journey.currentMission.section, "identification");
+  assert.equal(journey.currentMission.state, "available");
+  assert.equal(journey.currentMission.route, "/working-memory/3");
+});
+
 test("speech identification keeps current, completed, and available states distinct", () => {
   const available = buildChildJourney({ profile: {}, devUnlock: false });
   const current = buildChildJourney({
