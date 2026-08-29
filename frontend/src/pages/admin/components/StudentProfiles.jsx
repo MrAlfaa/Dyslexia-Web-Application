@@ -15,6 +15,7 @@ import GuardianStatCard from "../../../components/guardian/ui/GuardianStatCard";
 import GuardianStatusBadge from "../../../components/guardian/ui/GuardianStatusBadge";
 import GuardianButton from "../../../components/guardian/ui/GuardianButton";
 import GuardianModal from "../../../components/guardian/ui/GuardianModal";
+import { getCanRepairChildOwnership } from "./studentOwnershipCapability.utils";
 
 const GRADES = ["2", "3", "4", "5"];
 const GENDERS = [
@@ -253,14 +254,6 @@ function OwnershipRepairModal({ student, onClose, onRepaired }) {
   );
 }
 
-const getStoredAdminRole = () => {
-  try {
-    return JSON.parse(localStorage.getItem("adminUser") || "{}").role || "";
-  } catch {
-    return "";
-  }
-};
-
 function StudentProfiles() {
   const [students, setStudents] = useState([]);
   const [subscription, setSubscription] = useState(null);
@@ -270,7 +263,7 @@ function StudentProfiles() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [ownershipRepair, setOwnershipRepair] = useState(null);
   const [createdUsername, setCreatedUsername] = useState("");
-  const isSuperAdmin = getStoredAdminRole() === "super admin";
+  const [canRepairChildOwnership, setCanRepairChildOwnership] = useState(false);
 
   const load = async () => {
     try {
@@ -278,9 +271,14 @@ function StudentProfiles() {
         getAdminStudents(),
         getMySubscription().catch(() => ({ data: { data: null } })),
       ]);
+      const canRepair = getCanRepairChildOwnership(studentsRes.data);
       setStudents(studentsRes.data?.data || []);
       setSubscription(subscriptionRes.data?.data || null);
+      setCanRepairChildOwnership(canRepair);
+      if (!canRepair) setOwnershipRepair(null);
     } catch (error) {
+      setCanRepairChildOwnership(false);
+      setOwnershipRepair(null);
       toast.error(error.response?.data?.message || "Failed to load children");
     } finally {
       setLoading(false);
@@ -403,7 +401,7 @@ function StudentProfiles() {
                   <GuardianButton variant="secondary" onClick={() => setModal({ mode: "edit", student })}>
                     Edit
                   </GuardianButton>
-                  {isSuperAdmin && (
+                  {canRepairChildOwnership && (
                     <GuardianButton variant="secondary" onClick={() => setOwnershipRepair(student)}>
                       Repair owner
                     </GuardianButton>
@@ -450,7 +448,7 @@ function StudentProfiles() {
           onSubmit={(formData) => handleUpdate(modal.student._id, formData)}
         />
       )}
-      {ownershipRepair && (
+      {canRepairChildOwnership && ownershipRepair && (
         <OwnershipRepairModal
           student={ownershipRepair}
           onClose={() => setOwnershipRepair(null)}

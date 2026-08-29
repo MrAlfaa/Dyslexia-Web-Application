@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 
 const Admin = require("../../admin/models/admin.model");
 const Student = require("../../common/models/student.model");
+const adminController = require("../../admin/controllers/admin.controller");
 const adminRouter = require("../../admin/routes/admin.routes");
 const { verifyToken, isSuperAdmin } = require("../../../middleware/auth.middleware");
 
@@ -59,6 +60,64 @@ test("normal guardians receive 403 from the ownership authorization gate", () =>
 
   assert.equal(response.statusCode, 403);
   assert.equal(nextCalled, false);
+});
+
+test("student listing preserves its data array and denies repair capability to guardians", async () => {
+  const originalFind = Student.find;
+  let capturedScope;
+  Student.find = (scope) => {
+    capturedScope = scope;
+    return {
+      select() {
+        return this;
+      },
+      sort: async () => [{ _id: objectId(), fullName: "Child One" }],
+    };
+  };
+
+  try {
+    const response = createResponse();
+    await adminController.getAllStudents(
+      { user: { id: objectId(), type: "admin", role: "school admin" } },
+      response,
+    );
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(Array.isArray(response.body.data), true);
+    assert.deepEqual(response.body.viewer, { canRepairChildOwnership: false });
+    assert.equal(Array.isArray(capturedScope.$or), true);
+  } finally {
+    Student.find = originalFind;
+  }
+});
+
+test("student listing grants repair capability only from the authenticated super-admin role", async () => {
+  const originalFind = Student.find;
+  let capturedScope;
+  Student.find = (scope) => {
+    capturedScope = scope;
+    return {
+      select() {
+        return this;
+      },
+      sort: async () => [],
+    };
+  };
+
+  try {
+    const response = createResponse();
+    await adminController.getAllStudents(
+      { user: { id: objectId(), type: "admin", role: "super admin" } },
+      response,
+    );
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.body.data, []);
+    assert.deepEqual(response.body.viewer, { canRepairChildOwnership: true });
+    assert.deepEqual(capturedScope, {});
+  } finally {
+    Student.find = originalFind;
+  }
 });
 
 test("ownership repair rejects invalid Mongo IDs before database access", async () => {

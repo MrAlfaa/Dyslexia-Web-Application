@@ -111,7 +111,13 @@ exports.getAllStudents = async (req, res) => {
     const students = await Student.find(getChildScope(req))
       .select("-password")
       .sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: students });
+    res.status(200).json({
+      success: true,
+      data: students,
+      viewer: {
+        canRepairChildOwnership: isSuperAdminRequest(req),
+      },
+    });
   } catch (error) {
     console.error("Get all students error:", error);
     res.status(500).json({ success: false, message: "Server error" });
