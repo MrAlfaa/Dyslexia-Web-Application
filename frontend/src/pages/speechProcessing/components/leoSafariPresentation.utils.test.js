@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { buildSafariPresentation } from "./leoSafariPresentation.utils.js";
+
+const readSiblingSource = (relativePath) =>
+  readFileSync(new URL(relativePath, import.meta.url), "utf8");
 
 test("the recommended current activity becomes the only primary action", () => {
   const view = buildSafariPresentation({
@@ -134,4 +138,30 @@ test("building the presentation does not mutate backend activity objects", () =>
   buildSafariPresentation({ activities });
 
   assert.deepEqual(activities, snapshot);
+});
+
+test("the map keeps the primary game CTA independent from predicted checkpoint timing", () => {
+  const source = readSiblingSource("../LeoTrainingSafari.jsx");
+
+  assert.doesNotMatch(source, /uniqueCompletedCount\s*\+\s*1/);
+  assert.match(source, /checkpointDue=\{authoritativeCheckpointDue\}/);
+  assert.match(source, /t\(primaryAction\.labelKey\)/);
+});
+
+test("a locked session-start response returns from the game to the map", () => {
+  const safariSource = readSiblingSource("../LeoTrainingSafari.jsx");
+  const activitySource = readSiblingSource("./LeoActivityPlay.jsx");
+
+  assert.match(safariSource, /onLocked=\{showLockedState\}/);
+  assert.match(activitySource, /function LeoActivityPlay\(\{ activity, onComplete, onCancel, onLocked \}\)/);
+  assert.match(activitySource, /data\.code === "activity_locked"/);
+  assert.match(activitySource, /onLocked\?\.\(data\.lockReason \|\| data\.message\)/);
+});
+
+test("language choices use an accessible group and 44 pixel targets", () => {
+  const source = readSiblingSource("./LeoSafariHud.jsx");
+
+  assert.match(source, /role="group"/);
+  assert.match(source, /className=\{`min-h-11 min-w-11/);
+  assert.match(source, /aria-label=\{t\("safari_language_label"\)\}/);
 });

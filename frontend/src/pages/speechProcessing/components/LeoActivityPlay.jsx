@@ -21,7 +21,7 @@ const isSelectionPrompt = (prompt) =>
 const addUnique = (items, value) => (items.includes(value) ? items : [...items, value]);
 const removeValue = (items, value) => items.filter((item) => item !== value);
 
-function LeoActivityPlay({ activity, onComplete, onCancel }) {
+function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
   const [sessionId, setSessionId] = useState("");
   const [prompts, setPrompts] = useState([]);
   const [attemptPhase] = useState("training");
@@ -80,13 +80,18 @@ function LeoActivityPlay({ activity, onComplete, onCancel }) {
         setSessionId(response.data?.data?.sessionId || "");
         setPrompts(response.data?.data?.prompts || []);
       } catch (err) {
-        setError(err.response?.data?.message || "Leo could not open this jungle activity.");
+        const data = err.response?.data || {};
+        if (err.response?.status === 403 && data.code === "activity_locked") {
+          onLocked?.(data.lockReason || data.message);
+          return;
+        }
+        setError(data.message || "Leo could not open this jungle activity.");
       } finally {
         setLoading(false);
       }
     };
     start();
-  }, [activity.activityId]);
+  }, [activity.activityId, onLocked]);
 
   useEffect(() => {
     return () => {

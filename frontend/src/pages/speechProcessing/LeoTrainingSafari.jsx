@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { LockKeyhole, MapPin, Play, Sparkles } from "lucide-react";
+import { LockKeyhole, MapPin, Play } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -17,7 +17,6 @@ import LeoSafariHud from "./components/LeoSafariHud";
 import { buildSafariPresentation } from "./components/leoSafariPresentation.utils";
 
 const LeoSafari3DMap = lazy(() => import("./components/LeoSafari3DMap"));
-const CHECKPOINT_THRESHOLDS = new Set([2, 4, 5]);
 
 function LeoTrainingSafari() {
   const navigate = useNavigate();
@@ -26,7 +25,11 @@ function LeoTrainingSafari() {
   const [status, setStatus] = useState(null);
   const [activities, setActivities] = useState([]);
   const [recommendation, setRecommendation] = useState(null);
-  const [mapSummary, setMapSummary] = useState({ stars: 0, completedActivityIds: [] });
+  const [mapSummary, setMapSummary] = useState({
+    stars: 0,
+    completedActivityIds: [],
+    checkpointDue: false,
+  });
   const [activeActivity, setActiveActivity] = useState(null);
   const [openingActivityId, setOpeningActivityId] = useState("");
   const [lockNotice, setLockNotice] = useState("");
@@ -57,6 +60,12 @@ function LeoTrainingSafari() {
         stars: mapData.stars ?? progress.stars ?? statusData.stars ?? 0,
         completedActivityIds:
           mapData.completedActivityIds || progress.completedActivityIds || statusData.completedActivityIds || [],
+        checkpointDue:
+          mapData.checkpointDue === true ||
+          progress.checkpointDue === true ||
+          statusData.checkpointDue === true ||
+          mapData.recommendation?.checkpointDue === true ||
+          statusData.recommendation?.checkpointDue === true,
       });
     } catch (err) {
       setError(err.response?.data?.message || t("leo_could_not_load_training"));
@@ -82,14 +91,10 @@ function LeoTrainingSafari() {
     return ids;
   }, [basePresentation.replayActivities, mapSummary.completedActivityIds]);
   const uniqueCompletedCount = Math.min(activities.length || 5, completedActivityIds.size);
-  const checkpointDue = Boolean(
-    basePresentation.primaryAction &&
-      !completedActivityIds.has(basePresentation.primaryAction.activityId) &&
-      CHECKPOINT_THRESHOLDS.has(uniqueCompletedCount + 1)
-  );
+  const authoritativeCheckpointDue = mapSummary.checkpointDue === true;
   const presentation = useMemo(
-    () => buildSafariPresentation({ activities, recommendation, checkpointDue }),
-    [activities, checkpointDue, recommendation]
+    () => buildSafariPresentation({ activities, recommendation }),
+    [activities, recommendation]
   );
   const primaryAction = locked ? null : presentation.primaryAction;
 
@@ -168,6 +173,7 @@ function LeoTrainingSafari() {
           activity={activeActivity}
           onCancel={() => { navigate("/speech-processing/leo-training", { replace: true }); setActiveActivity(null); }}
           onComplete={handleActivityComplete}
+          onLocked={showLockedState}
         />
       </main>
     );
@@ -179,7 +185,12 @@ function LeoTrainingSafari() {
       style={{ backgroundImage: `linear-gradient(rgba(236,253,245,0.9), rgba(255,247,237,0.9)), url(${trainingBg})` }}
     >
       <div className="mx-auto max-w-7xl overflow-hidden rounded-lg border border-emerald-900/10 bg-white shadow-2xl shadow-emerald-950/15">
-        <LeoSafariHud stars={Number(mapSummary.stars) || 0} completedCount={uniqueCompletedCount} onBack={() => navigate("/speech-processing")} />
+        <LeoSafariHud
+          stars={Number(mapSummary.stars) || 0}
+          completedCount={uniqueCompletedCount}
+          checkpointDue={authoritativeCheckpointDue}
+          onBack={() => navigate("/speech-processing")}
+        />
         {error ? <p role="alert" className="border-b border-rose-100 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700">{error}</p> : null}
         {lockNotice ? (
           <section className="border-b border-amber-200 bg-amber-50 px-5 py-4" aria-labelledby="safari-lock-title">
@@ -208,7 +219,7 @@ function LeoTrainingSafari() {
             {primaryAction ? (
               <section className="grid items-center gap-4 rounded-lg border border-white/30 bg-white/95 p-4 shadow-2xl backdrop-blur sm:grid-cols-[1fr_auto] sm:p-5">
                 <div className="min-w-0">
-                  <p className="inline-flex items-center gap-2 text-xs font-black uppercase text-emerald-700">{checkpointDue ? <Sparkles aria-hidden="true" className="h-4 w-4" /> : <MapPin aria-hidden="true" className="h-4 w-4" />}{t(checkpointDue ? "safari_trail_check_inside_game" : "safari_leos_pick_label")}</p>
+                  <p className="inline-flex items-center gap-2 text-xs font-black uppercase text-emerald-700"><MapPin aria-hidden="true" className="h-4 w-4" />{t("safari_leos_pick_label")}</p>
                   <h2 className="mt-1 truncate text-2xl font-black text-slate-950 sm:text-3xl">{primaryAction.shortTitle || primaryAction.title}</h2>
                   <p className="mt-1 text-sm font-bold text-slate-600">{primaryAction.childDescription || primaryAction.description || t("safari_primary_default_desc")}</p>
                 </div>

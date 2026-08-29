@@ -7,7 +7,7 @@ const CHECKPOINTS = [
   { sequence: 3, threshold: 5 },
 ];
 
-function LeoSafariHud({ stars = 0, completedCount = 0, onBack }) {
+function LeoSafariHud({ stars = 0, completedCount = 0, checkpointDue = false, onBack }) {
   const { t, i18n } = useTranslation("sp");
   const safeCompletedCount = Math.min(5, Math.max(0, Number(completedCount) || 0));
   const nextCheckpoint =
@@ -44,6 +44,7 @@ function LeoSafariHud({ stars = 0, completedCount = 0, onBack }) {
           </span>
           <div
             className="flex min-h-11 items-center rounded-md bg-white/10 p-1"
+            role="group"
             aria-label={t("safari_language_label")}
           >
             <Languages aria-hidden="true" className="mx-2 h-4 w-4 text-emerald-200" />
@@ -57,7 +58,7 @@ function LeoSafariHud({ stars = 0, completedCount = 0, onBack }) {
                   key={language}
                   type="button"
                   onClick={() => i18n.changeLanguage(language)}
-                  className={`min-h-9 min-w-10 rounded px-2 text-xs font-black outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
+                  className={`min-h-11 min-w-11 rounded px-2 text-xs font-black outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
                     active ? "bg-white text-emerald-950" : "text-white hover:bg-white/10"
                   }`}
                   aria-pressed={active}
@@ -70,6 +71,12 @@ function LeoSafariHud({ stars = 0, completedCount = 0, onBack }) {
           </div>
         </div>
       </div>
+
+      {checkpointDue ? (
+        <p role="status" className="mt-3 rounded-md bg-amber-50 px-4 py-3 text-center text-sm font-black text-amber-900">
+          {t("safari_trail_checkpoint_ready")}
+        </p>
+      ) : null}
 
       <div className="mt-3 grid gap-3 border-t border-white/10 pt-3 lg:grid-cols-[auto_1fr] lg:items-center">
         <p className="text-sm font-bold text-emerald-50">
