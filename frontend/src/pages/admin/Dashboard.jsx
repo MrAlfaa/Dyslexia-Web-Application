@@ -19,6 +19,7 @@ import SpeechOverview from "./components/speech/SpeechOverview";
 import SpeechIdentificationResult from "./components/speech/SpeechIdentificationResult";
 import SpeechImprovementProgress from "./components/speech/SpeechImprovementProgress";
 import SpeechSessionHistory from "./components/speech/SpeechSessionHistory";
+import { GuardianChildProvider } from "../../contexts/GuardianChildContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -33,29 +34,31 @@ const Dashboard = () => {
   }, [navigate]);
 
   return (
-    <AdminLayout>
-      <Routes>
-        <Route path="students" element={<StudentProfiles />} />
-        <Route path="subscription" element={<Subscription />} />
-        <Route path="wm-identify" element={<WMIdentifyResults />} />
-        <Route path="wm-improve" element={<WMImproveResults />} />
-        <Route path="pa-identify" element={<PAIdentifyResults />} />
-        <Route path="pa-improve" element={<PAImproveResults />} />
-        <Route path="reading-identify" element={<ReadingIdentifyResults />} />
-        <Route path="reading-improve" element={<ReadingImproveResults />} />
-        <Route path="speech-identify" element={<SpeechIdentifyResults />} />
-        <Route path="speech-improve" element={<SpeechImproveResults />} />
-        <Route path="speech-support" element={<SpeechSupportResults />} />
-        <Route path="speech-data-collection" element={isSuperAdmin ? <SpeechDataCollection /> : <Navigate to="speech-overview" replace />} />
-        <Route path="speech-assignments" element={isSuperAdmin ? <SpeechAssignments /> : <Navigate to="speech-overview" replace />} />
-        <Route path="speech-prompt-bank" element={isSuperAdmin ? <SpeechPromptBank /> : <Navigate to="speech-overview" replace />} />
-        <Route path="speech-overview" element={<SpeechOverview />} />
-        <Route path="speech-identification-result" element={<SpeechIdentificationResult />} />
-        <Route path="speech-improvement-progress" element={<SpeechImprovementProgress />} />
-        <Route path="speech-session-history" element={<SpeechSessionHistory />} />
-        <Route path="*" element={<Navigate to="students" replace />} />
-      </Routes>
-    </AdminLayout>
+    <GuardianChildProvider>
+      <AdminLayout>
+        <Routes>
+          <Route path="students" element={<StudentProfiles />} />
+          <Route path="subscription" element={<Subscription />} />
+          <Route path="wm-identify" element={<WMIdentifyResults />} />
+          <Route path="wm-improve" element={<WMImproveResults />} />
+          <Route path="pa-identify" element={<PAIdentifyResults />} />
+          <Route path="pa-improve" element={<PAImproveResults />} />
+          <Route path="reading-identify" element={<ReadingIdentifyResults />} />
+          <Route path="reading-improve" element={<ReadingImproveResults />} />
+          <Route path="speech-identify" element={<SpeechIdentifyResults />} />
+          <Route path="speech-improve" element={<SpeechImproveResults />} />
+          <Route path="speech-support" element={<SpeechSupportResults />} />
+          <Route path="speech-data-collection" element={isSuperAdmin ? <SpeechDataCollection /> : <Navigate to="speech-overview" replace />} />
+          <Route path="speech-assignments" element={isSuperAdmin ? <SpeechAssignments /> : <Navigate to="speech-overview" replace />} />
+          <Route path="speech-prompt-bank" element={isSuperAdmin ? <SpeechPromptBank /> : <Navigate to="speech-overview" replace />} />
+          <Route path="speech-overview" element={<SpeechOverview />} />
+          <Route path="speech-identification-result" element={<SpeechIdentificationResult />} />
+          <Route path="speech-improvement-progress" element={<SpeechImprovementProgress />} />
+          <Route path="speech-session-history" element={<SpeechSessionHistory />} />
+          <Route path="*" element={<Navigate to="students" replace />} />
+        </Routes>
+      </AdminLayout>
+    </GuardianChildProvider>
   );
 };
 
