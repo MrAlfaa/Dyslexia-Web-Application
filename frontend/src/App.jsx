@@ -23,6 +23,7 @@ import Identify from "./pages/workingMemory/identify/Identify";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminRegister from "./pages/admin/AdminRegister";
 import AdminDashboard from "./pages/admin/Dashboard";
+import { getAdminSessionState } from "./services/admin/adminSession.utils";
 
 // Component to protect routes that require authentication
 const ProtectedRoute = ({ children }) => {
@@ -43,8 +44,7 @@ const PublicRoute = ({ children }) => {
 };
 
 const AdminProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("adminToken");
-  if (!token) {
+  if (getAdminSessionState(localStorage) === "anonymous") {
     return <Navigate to="/admin/login" replace />;
   }
   return children;

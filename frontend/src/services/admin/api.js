@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearAdminSession, isAdminAuthFailure } from "./adminSession.utils";
 
 const AdminAPI = axios.create({
   baseURL: "http://localhost:5000/api",
@@ -13,6 +14,18 @@ AdminAPI.interceptors.request.use((req) => {
 
   return req;
 });
+
+AdminAPI.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (isAdminAuthFailure(error)) {
+      clearAdminSession(localStorage);
+      window.location.assign("/admin/login");
+    }
+
+    return Promise.reject(error);
+  },
+);
 
 export const adminLogin = (data) => AdminAPI.post("/admin/login", data);
 
