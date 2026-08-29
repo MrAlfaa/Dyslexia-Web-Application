@@ -2,8 +2,14 @@ const PLAYABLE_PRIMARY_STATES = new Set(["current", "available"]);
 const REPLAY_STATES = new Set(["completed", "replay"]);
 const PRESENTATION_STATES = new Set(["current", "available", "completed", "replay", "locked"]);
 
-const getRecommendedActivityId = (recommendation) =>
-  recommendation?.nextActivityId || recommendation?.nextActivity?.activityId || null;
+const getRecommendedActivityId = (recommendation) => {
+  const activityId =
+    recommendation?.nextActivityId ?? recommendation?.nextActivity?.activityId;
+
+  return typeof activityId === "string" && activityId.trim()
+    ? activityId.trim()
+    : null;
+};
 
 const normalizeZone = (activity) => {
   const backendState = activity?.state || "locked";
@@ -39,19 +45,24 @@ export function buildSafariPresentation({
   const normalizedZones = Array.isArray(activities)
     ? activities.filter(Boolean).map(normalizeZone)
     : [];
-  const primaryZone = normalizedZones.find(
-    (zone) =>
-      zone.activityId === recommendedActivityId &&
-      PLAYABLE_PRIMARY_STATES.has(zone.state)
-  );
-  const zones = normalizedZones.map((zone) => ({
+  const primaryMatches = recommendedActivityId
+    ? normalizedZones
+        .map((zone, index) => ({ zone, index }))
+        .filter(
+          ({ zone }) =>
+            zone.activityId === recommendedActivityId &&
+            PLAYABLE_PRIMARY_STATES.has(zone.state)
+        )
+    : [];
+  const primaryMatch = primaryMatches.length === 1 ? primaryMatches[0] : null;
+  const zones = normalizedZones.map((zone, index) => ({
     ...zone,
-    isPrimary: zone.activityId === primaryZone?.activityId,
+    isPrimary: index === primaryMatch?.index,
   }));
   const replayActivities = zones.filter((zone) => zone.state === "replay");
-  const primaryAction = primaryZone
+  const primaryAction = primaryMatch
     ? {
-        ...zones.find((zone) => zone.activityId === primaryZone.activityId),
+        ...zones[primaryMatch.index],
         kind: checkpointDue ? "checkpoint" : "activity",
         labelKey: checkpointDue
           ? "safari_start_trail_check"
@@ -60,7 +71,7 @@ export function buildSafariPresentation({
     : null;
 
   let trailMessage = "safari_trail_waiting";
-  if (checkpointDue) {
+  if (checkpointDue && primaryAction) {
     trailMessage = "safari_trail_checkpoint_ready";
   } else if (primaryAction) {
     trailMessage = "safari_trail_continue";

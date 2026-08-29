@@ -29,6 +29,33 @@ test("a recommended available activity can be primary", () => {
   assert.equal(view.primaryAction.state, "available");
 });
 
+test("a missing or blank recommendation id cannot create a primary action", () => {
+  for (const recommendation of [null, {}, { nextActivityId: null }, { nextActivityId: "   " }]) {
+    const view = buildSafariPresentation({
+      activities: [{ activityId: null, state: "current", title: "Unknown activity" }],
+      recommendation,
+    });
+
+    assert.equal(view.primaryAction, null);
+    assert.equal(view.zones[0].isPrimary, false);
+    assert.equal(view.trailMessage, "safari_trail_waiting");
+  }
+});
+
+test("duplicate playable matches fail closed instead of creating multiple primary zones", () => {
+  const view = buildSafariPresentation({
+    activities: [
+      { activityId: "echo-roar", state: "current", title: "Echo Roar" },
+      { activityId: "echo-roar", state: "available", title: "Echo Roar duplicate" },
+    ],
+    recommendation: { nextActivityId: "echo-roar" },
+  });
+
+  assert.equal(view.primaryAction, null);
+  assert.deepEqual(view.zones.map((zone) => zone.isPrimary), [false, false]);
+  assert.equal(view.trailMessage, "safari_trail_waiting");
+});
+
 test("completed and replay activities are secondary and never become primary", () => {
   const view = buildSafariPresentation({
     activities: [
@@ -87,6 +114,17 @@ test("checkpoint due changes the recommended action and trail message", () => {
   assert.equal(checkpoint.primaryAction.kind, "checkpoint");
   assert.equal(checkpoint.primaryAction.labelKey, "safari_start_trail_check");
   assert.equal(checkpoint.trailMessage, "safari_trail_checkpoint_ready");
+});
+
+test("checkpoint messaging waits when there is no unique playable primary action", () => {
+  const view = buildSafariPresentation({
+    activities: [{ activityId: "sound-twins", state: "locked", title: "Sound Twins" }],
+    recommendation: { nextActivityId: "sound-twins" },
+    checkpointDue: true,
+  });
+
+  assert.equal(view.primaryAction, null);
+  assert.equal(view.trailMessage, "safari_trail_waiting");
 });
 
 test("building the presentation does not mutate backend activity objects", () => {
