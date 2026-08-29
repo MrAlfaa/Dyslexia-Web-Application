@@ -14,6 +14,7 @@ const leoImprovementPrompts = require("../data/leoImprovementPrompts");
 const {
   extractPlaceholderFeatures,
   getInvalidAudioChildFeedback,
+  canUsePlaceholderAudio,
 } = require("../services/placeholderFeatureExtractor.service");
 const {
   analyzeAudio,
@@ -947,9 +948,12 @@ exports.submitIdentificationAttempt = async (req, res) => {
       attemptNo,
     });
     const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs);
-    const allowPlaceholderAudio =
-      !req.file &&
-      (process.env.NODE_ENV !== "production" || toBoolean(req.body.placeholderMode));
+    const allowPlaceholderAudio = canUsePlaceholderAudio({
+      nodeEnv: process.env.NODE_ENV,
+      placeholderRequested: toBoolean(req.body.placeholderMode),
+      hasFile: Boolean(req.file),
+      isSelection: false,
+    });
 
     const features = extractPlaceholderFeatures({
       file: savedFile,
@@ -1455,10 +1459,12 @@ exports.submitImprovementAttempt = async (req, res) => {
       attemptNo,
     });
     const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs);
-    const allowPlaceholderAudio =
-      !req.file &&
-      !isSelection &&
-      (process.env.NODE_ENV !== "production" || toBoolean(req.body.placeholderMode));
+    const allowPlaceholderAudio = canUsePlaceholderAudio({
+      nodeEnv: process.env.NODE_ENV,
+      placeholderRequested: toBoolean(req.body.placeholderMode),
+      hasFile: Boolean(req.file),
+      isSelection,
+    });
 
     const features = extractPlaceholderFeatures({
       file: savedFile,
@@ -1473,6 +1479,7 @@ exports.submitImprovementAttempt = async (req, res) => {
       skill: activity.skill,
       mode: "improvement",
       allowPlaceholderAudio,
+      isSelection,
       selectedAnswer: attemptPolicy.selectedAnswer,
       expectedAnswer,
     });

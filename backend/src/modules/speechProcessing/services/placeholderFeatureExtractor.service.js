@@ -53,6 +53,17 @@ const getDeterministicOffset = (promptId) =>
 const getInvalidChildFeedback = (reason) =>
   invalidAudioMessages[reason] || "Leo could not check that sound. Let's try one more time.";
 
+const canUsePlaceholderAudio = ({
+  nodeEnv,
+  placeholderRequested,
+  hasFile,
+  isSelection,
+} = {}) =>
+  nodeEnv !== "production" &&
+  placeholderRequested === true &&
+  hasFile !== true &&
+  isSelection !== true;
+
 const buildSelectionFeatures = ({
   audioDurationMs,
   attemptNo,
@@ -125,6 +136,7 @@ exports.extractPlaceholderFeatures = ({
   mode,
   skill,
   allowPlaceholderAudio = false,
+  isSelection = false,
   selectedAnswer,
   expectedAnswer,
 }) => {
@@ -132,9 +144,7 @@ exports.extractPlaceholderFeatures = ({
   // TODO: Add Whisper/wav2vec2 and phoneme-comparison features in a later phase.
   const currentAttemptNo = Math.max(Number(attemptNo) || 1, 1);
   const retryCount = Math.max(currentAttemptNo - 1, 0);
-  const isSelectionAttempt = selectedAnswer !== undefined || expectedAnswer !== undefined;
-
-  if (isSelectionAttempt) {
+  if (isSelection === true) {
     return buildSelectionFeatures({
       audioDurationMs,
       attemptNo,
@@ -282,3 +292,4 @@ exports.extractPlaceholderFeatures = ({
 };
 
 exports.getInvalidAudioChildFeedback = getInvalidChildFeedback;
+exports.canUsePlaceholderAudio = canUsePlaceholderAudio;
