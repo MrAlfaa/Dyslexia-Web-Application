@@ -20,24 +20,26 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { fullName, grade, profilePhoto, gender, school } = req.body;
+    const hasProfilePhoto = Object.prototype.hasOwnProperty.call(req.body, "profilePhoto");
 
-    const photoValidation = validateProfilePhotoDataUrl(profilePhoto);
-    if (!photoValidation.valid) {
-      return res.status(400).json({
-        code: "invalid_profile_photo",
-        message: photoValidation.reason,
-      });
+    if (hasProfilePhoto) {
+      const photoValidation = validateProfilePhotoDataUrl(profilePhoto);
+      if (!photoValidation.valid) {
+        return res.status(400).json({
+          code: "invalid_profile_photo",
+          message: photoValidation.reason,
+        });
+      }
+    }
+
+    const profileUpdate = { fullName, grade, gender, school };
+    if (hasProfilePhoto && profilePhoto !== undefined) {
+      profileUpdate.profilePhoto = profilePhoto;
     }
 
     const student = await Student.findByIdAndUpdate(
       req.user.id,
-      {
-        fullName,
-        grade,
-        profilePhoto,
-        gender,
-        school,
-      },
+      profileUpdate,
       { new: true, runValidators: true }
     ).select("-password");
 

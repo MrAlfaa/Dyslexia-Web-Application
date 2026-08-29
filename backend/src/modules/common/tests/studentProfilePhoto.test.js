@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 
 const Student = require("../models/student.model");
 const studentController = require("../controllers/student.controller");
+const adminController = require("../../admin/controllers/admin.controller");
 const {
   MAX_PROFILE_PHOTO_BYTES,
   validateProfilePhotoDataUrl,
@@ -95,6 +96,70 @@ test("updateProfile rejects an invalid profile photo before writing to MongoDB",
     assert.equal(response.body.code, "invalid_profile_photo");
     assert.equal(updateCalled, false);
   } finally {
+    Student.findByIdAndUpdate = originalFindByIdAndUpdate;
+  }
+});
+
+test("updateProfile omits profilePhoto from MongoDB updates when the field is absent", async () => {
+  const originalFindByIdAndUpdate = Student.findByIdAndUpdate;
+  let capturedUpdate;
+  Student.findByIdAndUpdate = (_id, update) => {
+    capturedUpdate = update;
+    return {
+      select: async () => ({ _id: "student-1", ...update }),
+    };
+  };
+
+  try {
+    const response = createResponse();
+    await studentController.updateProfile(
+      {
+        user: { id: "student-1" },
+        body: { fullName: "Updated Name", grade: "4", school: "New School" },
+      },
+      response,
+    );
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(Object.hasOwn(capturedUpdate, "profilePhoto"), false);
+  } finally {
+    Student.findByIdAndUpdate = originalFindByIdAndUpdate;
+  }
+});
+
+test("admin scoped update rejects an invalid profile photo before child lookup or update", async () => {
+  const originalFindOne = Student.findOne;
+  const originalFindByIdAndUpdate = Student.findByIdAndUpdate;
+  let databaseCalled = false;
+  Student.findOne = async () => {
+    databaseCalled = true;
+    return {};
+  };
+  Student.findByIdAndUpdate = () => {
+    databaseCalled = true;
+    return { select: async () => ({}) };
+  };
+
+  try {
+    const response = createResponse();
+    await adminController.updateStudentScoped(
+      {
+        user: { id: "guardian-1", role: "school admin" },
+        params: { id: "student-1" },
+        body: { profilePhoto: "https://example.com/legacy-photo.png" },
+      },
+      response,
+    );
+
+    assert.equal(response.statusCode, 400);
+    assert.deepEqual(response.body, {
+      success: false,
+      code: "invalid_profile_photo",
+      message: "Profile photo must be a JPEG, PNG, or WebP data URL.",
+    });
+    assert.equal(databaseCalled, false);
+  } finally {
+    Student.findOne = originalFindOne;
     Student.findByIdAndUpdate = originalFindByIdAndUpdate;
   }
 });

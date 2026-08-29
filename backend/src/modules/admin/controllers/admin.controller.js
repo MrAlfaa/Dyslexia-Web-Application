@@ -11,6 +11,9 @@ const {
 const {
   buildPublicGuardianAccount,
 } = require("../services/publicGuardianRegistration.service");
+const {
+  validateProfilePhotoDataUrl,
+} = require("../../common/services/profilePhotoValidation.service");
 
 const isSuperAdminRequest = (req) => req.user?.role === "super admin";
 
@@ -182,6 +185,17 @@ exports.updateStudentScoped = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+
+    if (Object.prototype.hasOwnProperty.call(updateData, "profilePhoto")) {
+      const photoValidation = validateProfilePhotoDataUrl(updateData.profilePhoto);
+      if (!photoValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          code: "invalid_profile_photo",
+          message: photoValidation.reason,
+        });
+      }
+    }
 
     if (updateData.username) {
       updateData.username = String(updateData.username).trim().toLowerCase();
