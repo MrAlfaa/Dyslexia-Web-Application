@@ -16,7 +16,10 @@ import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 import Toast from "../../components/ui/Toast";
 import leo from "../../assets/lexiland/leo-lion.webp";
 import logo from "../../assets/lexiland/lexiland-logo.webp";
-import { buildProfileUpdatePayload } from "./profileUpdatePayload.utils";
+import {
+  buildProfileUpdatePayload,
+  getProfileChangeState,
+} from "./profileUpdatePayload.utils";
 
 const leoActivityTitleKeys = {
   leo_first_sound_hunt: "profile_activity_first_sound_hunt",
@@ -44,7 +47,6 @@ function Profile() {
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState(createEmptyProfile);
   const [initialProfile, setInitialProfile] = useState(null);
-  const [hasSelectedNewPhoto, setHasSelectedNewPhoto] = useState(false);
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -59,13 +61,9 @@ function Profile() {
     navigate("/");
   };
 
-  const hasChanges = Boolean(
-    initialProfile &&
-      (profile.fullName !== initialProfile.fullName ||
-        profile.grade !== initialProfile.grade ||
-        profile.gender !== initialProfile.gender ||
-        profile.school !== initialProfile.school ||
-        hasSelectedNewPhoto),
+  const { hasChanges, hasSelectedNewPhoto } = getProfileChangeState(
+    profile,
+    initialProfile,
   );
 
   useEffect(() => {
@@ -83,7 +81,6 @@ function Profile() {
         };
         setProfile(data);
         setInitialProfile(data);
-        setHasSelectedNewPhoto(false);
       } catch (error) {
         console.error("Error fetching profile:", error);
         setToast({ show: true, message: "", messageKey: "failed_load_profile", type: "error" });
@@ -156,7 +153,6 @@ function Profile() {
         throw new Error("Unexpected image encoding.");
       }
       setProfile((current) => ({ ...current, profilePhoto: dataUrl }));
-      setHasSelectedNewPhoto(true);
     } catch (error) {
       console.error("Error reading profile photo:", error);
       showPhotoError("profile_image_invalid", input);
@@ -173,15 +169,15 @@ function Profile() {
     event.preventDefault();
     if (!hasChanges || saving) return;
 
+    const submittedProfile = { ...profile };
     setSaving(true);
     try {
       await updateStudentProfile(
-        buildProfileUpdatePayload(profile, {
+        buildProfileUpdatePayload(submittedProfile, {
           includeProfilePhoto: hasSelectedNewPhoto,
         }),
       );
-      setInitialProfile({ ...profile });
-      setHasSelectedNewPhoto(false);
+      setInitialProfile(submittedProfile);
       setToast({ show: true, message: t("profile_updated_success"), type: "success" });
     } catch (error) {
       console.error("Error updating profile:", error);
