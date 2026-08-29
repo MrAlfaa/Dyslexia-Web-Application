@@ -16,7 +16,12 @@ import LeoLevelFeedbackToast from "./components/LeoLevelFeedbackToast";
 import LeoLevelMap from "./components/LeoLevelMap";
 import { getLeoActivityTheme } from "./components/leoActivityThemes";
 import useLeoSoundEffects from "./components/useLeoSoundEffects";
-import { canAttemptProgress, canPlayTargetAudio } from "./components/speechGameFlow.utils";
+import {
+  canAttemptProgress,
+  canPlayTargetAudio,
+  canSubmitLeoPrompt,
+  createSubmissionFailureFeedback,
+} from "./components/speechGameFlow.utils";
 
 const fallbackPrompts = [
   {
@@ -176,7 +181,11 @@ function LeoIdentificationGame() {
   };
 
   const submitAttempt = async (recordingOverride) => {
-    if (!sessionId || !currentPrompt) return;
+    if (!sessionId || !canSubmitLeoPrompt({
+      prompt: currentPrompt,
+      submitting,
+      feedback: latestResult,
+    })) return;
     const recordingToSubmit = recordingOverride?.audioBlob ? recordingOverride : recording;
     if (!recordingToSubmit && recorderSupported) {
       setError(t("record_before_send", "Record the sound first."));
@@ -239,8 +248,14 @@ function LeoIdentificationGame() {
         }));
         advanceAfterSuccess(1400, nextStars);
       }
-    } catch (err) {
-      setError(err.response?.data?.message || t("could_not_save_sound", "Leo could not save this sound. Try again."));
+    } catch {
+      setRecording(null);
+      setLatestResult(createSubmissionFailureFeedback({
+        promptId: currentPrompt.promptId,
+        childFeedback: t("recording_check_failed"),
+        leoMessage: t("recording_check_failed_hint"),
+      }));
+      setError("");
     } finally {
       setSubmitting(false);
     }

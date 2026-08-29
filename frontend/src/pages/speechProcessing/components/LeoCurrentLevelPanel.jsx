@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import LeoSentencePrompt from "./LeoSentencePrompt";
 import SpeechRecorder from "./SpeechRecorder";
+import { getLeoPromptPrimaryAction } from "./speechGameFlow.utils";
 
 const isSelectionPrompt = (prompt) =>
   prompt?.taskType === "first_sound" || prompt?.taskType === "minimal_pair";
@@ -72,6 +73,7 @@ function LeoCurrentLevelPanel({
   const wordMessage = getWordReadingMessage(feedback?.wordReading, t);
   const sentenceMessage = getSentenceFeedbackMessage(feedback?.sentenceFeedback, t);
   const recordingLimitMs = longReadingPrompt ? (paragraphPrompt ? 45000 : 30000) : null;
+  const primaryAction = getLeoPromptPrimaryAction({ feedback, submitting, selectionPrompt });
 
   const speakPrompt = () => {
     if (!allowPromptPlayback || isRecording) return;
@@ -142,7 +144,14 @@ function LeoCurrentLevelPanel({
 
       <div className="mt-5 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
-          {selectionPrompt ? (
+          {feedback ? (
+            <div
+              className="rounded-[2rem] bg-white/86 px-5 py-6 text-center text-sm font-black text-emerald-900 shadow-lg shadow-amber-950/5 ring-1 ring-white"
+              aria-live="polite"
+            >
+              {t("feedback_action_ready")}
+            </div>
+          ) : selectionPrompt ? (
             <div className="rounded-[2rem] bg-white/86 p-4 shadow-lg shadow-amber-950/5 ring-1 ring-white">
               <p className="text-sm font-black text-slate-700">{t("choose_sound_gem")}</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -151,6 +160,7 @@ function LeoCurrentLevelPanel({
                     key={option}
                     type="button"
                     onClick={() => onSelectAnswer(option)}
+                    disabled={submitting}
                     className={`rounded-[1.5rem] px-5 py-5 text-2xl font-black shadow-sm ring-2 transition hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-amber-200 ${
                       selectedAnswer === option
                         ? "bg-emerald-700 text-white ring-emerald-700"
@@ -196,7 +206,7 @@ function LeoCurrentLevelPanel({
             </p>
           )}
 
-          {!feedback && selectionPrompt ? (
+          {primaryAction === "submit" || (primaryAction === "checking" && selectionPrompt) ? (
             <button
               type="button"
               onClick={onSubmit}
@@ -213,7 +223,7 @@ function LeoCurrentLevelPanel({
                   ? t("sending_to_leo")
                   : t("send_to_leo")}
             </button>
-          ) : !feedback ? (
+          ) : primaryAction === "record" || primaryAction === "checking" ? (
             <div className="mt-5 rounded-[1.5rem] bg-emerald-50 px-4 py-4 text-center ring-1 ring-emerald-100" aria-live="polite">
               <p className="text-sm font-black text-emerald-900">
                 {submitting ? t("sending_to_leo") : t("recorder_auto_submit_hint")}
@@ -225,14 +235,18 @@ function LeoCurrentLevelPanel({
           ) : (
             <div className="mt-5 rounded-[1.75rem] bg-amber-50 p-4 ring-1 ring-amber-100">
               <p className="text-lg font-black text-amber-950">
-                {longReadingPrompt
-                  ? sentenceMessage
-                  : feedback.childFeedback || t("great_safari_work")}
+                {feedback.submissionFailed
+                  ? feedback.childFeedback
+                  : longReadingPrompt
+                    ? sentenceMessage
+                    : feedback.childFeedback || t("great_safari_work")}
               </p>
               <p className="mt-2 text-sm font-bold text-amber-800">
-                {longReadingPrompt
-                  ? t("sentence_feedback_encouragement")
-                  : feedback.leoMessage || t("found_sound_gem")}
+                {feedback.submissionFailed
+                  ? feedback.leoMessage
+                  : longReadingPrompt
+                    ? t("sentence_feedback_encouragement")
+                    : feedback.leoMessage || t("found_sound_gem")}
               </p>
               {!longReadingPrompt && feedback.wordReading?.attemptStatus !== "processing" && feedback.wordReading && (
                 <div className="mt-4 rounded-[1.25rem] bg-white p-3 text-left ring-1 ring-amber-100">
@@ -276,13 +290,17 @@ function LeoCurrentLevelPanel({
               <p className="mt-3 rounded-full bg-white px-3 py-2 text-sm font-black text-emerald-800">
                 +{feedback.starsEarned || 0} {theme?.collectible || "sound gems"}
               </p>
-              {(feedback.retryRequired || feedback.nextPromptUnlocked === false) ? (
+              {primaryAction === "retry" ? (
                 <button
                   type="button"
                   onClick={onRetry}
                   className="mt-4 w-full rounded-[1.5rem] bg-orange-500 px-6 py-4 text-sm font-black text-white shadow-lg shadow-orange-950/10 transition hover:-translate-y-1"
                 >
-                  {longReadingPrompt ? t("sentence_retry_button") : t("try_this_level_again")}
+                  {feedback.submissionFailed
+                    ? t("recorder_again")
+                    : longReadingPrompt
+                      ? t("sentence_retry_button")
+                      : t("try_this_level_again")}
                 </button>
               ) : (
                 <button

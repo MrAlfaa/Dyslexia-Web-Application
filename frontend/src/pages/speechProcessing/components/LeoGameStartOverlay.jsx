@@ -6,8 +6,8 @@ import LeoLevelMap from "./LeoLevelMap";
 function LeoGameStartOverlay({
   title,
   subtitle,
-  startLabel = "Start Adventure",
-  backLabel = "Back to Safari",
+  startLabel,
+  backLabel,
   onStart,
   onBack,
   prompts = [],
@@ -19,6 +19,9 @@ function LeoGameStartOverlay({
   const { t } = useTranslation("sp");
   const totalLevels = prompts.length || 1;
   const completedLevels = completedPromptIds.length;
+  const resolvedStartLabel = startLabel || t("start_adventure");
+  const resolvedBackLabel = backLabel || t("back_to_sound_safari");
+  const collectibleLabel = theme?.collectible || t("sound_gems");
 
   return (
     <section
@@ -39,15 +42,15 @@ function LeoGameStartOverlay({
             onClick={onBack}
             className="rounded-full border-4 border-amber-100 bg-gradient-to-br from-amber-200 to-orange-400 px-5 py-3 text-sm font-black text-amber-950 shadow-xl shadow-emerald-950/25 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-amber-100"
           >
-            {backLabel}
+            {resolvedBackLabel}
           </button>
 
           <div className="flex flex-wrap items-center justify-end gap-3">
             <span className="rounded-[1.35rem] border-4 border-amber-100 bg-amber-50 px-4 py-2 text-sm font-black text-emerald-950 shadow-xl shadow-emerald-950/20">
-              {completedLevels}/{totalLevels} levels
+              {t("start_overlay_level_progress", { completed: completedLevels, total: totalLevels })}
             </span>
             <span className="rounded-[1.35rem] border-4 border-amber-100 bg-amber-50 px-4 py-2 text-sm font-black text-emerald-950 shadow-xl shadow-emerald-950/20">
-              {totalStars} {theme?.collectible || "sound gems"}
+              {totalStars} {collectibleLabel}
             </span>
           </div>
         </div>
@@ -64,12 +67,12 @@ function LeoGameStartOverlay({
           </div>
 
           <div className="mx-auto mt-4 max-w-2xl rounded-[1.6rem] border-4 border-amber-100 bg-amber-50 px-5 py-3 text-sm font-black leading-6 text-amber-950 shadow-xl shadow-emerald-950/20 sm:text-base">
-            {subtitle || theme?.animalMessage || "Follow Leo's sound path."}
+            {subtitle || t("follow_sound_path")}
           </div>
         </div>
 
         <div className="mt-4 grid flex-1 items-center gap-4 lg:grid-cols-[240px_1fr_250px]">
-          <aside className="order-2 flex flex-col items-center lg:order-1 lg:items-start">
+          <aside className="order-3 flex flex-col items-center lg:order-1 lg:items-start">
             <div className="relative">
               <img
                 src={leo}
@@ -77,12 +80,35 @@ function LeoGameStartOverlay({
                 className="h-40 object-contain mix-blend-multiply drop-shadow-[0_18px_24px_rgba(6,78,59,0.55)] sm:h-52 lg:h-56"
               />
               <div className="absolute -right-5 top-12 max-w-[150px] rounded-[1.4rem] border-4 border-amber-100 bg-amber-50 px-4 py-3 text-center text-sm font-black leading-5 text-amber-950 shadow-xl shadow-emerald-950/20">
-                {theme?.animalMessage || "Let's find your sound path!"}
+                {t("lets_find_sound_path")}
               </div>
             </div>
           </aside>
 
-          <div className="order-1 lg:order-2">
+          <aside className="order-1 flex flex-col items-center gap-4 lg:order-3 lg:items-stretch">
+            <button
+              type="button"
+              onClick={onStart}
+              disabled={startDisabled}
+              className="w-full max-w-[280px] rounded-[2rem] border-4 border-amber-100 bg-gradient-to-br from-amber-300 via-orange-400 to-orange-500 px-8 py-5 text-lg font-black text-amber-950 shadow-2xl shadow-emerald-950/30 transition hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-60"
+            >
+              {resolvedStartLabel}
+            </button>
+
+            <div className="w-full max-w-[260px] rounded-[1.75rem] border-4 border-amber-100 bg-amber-50 p-4 text-center text-emerald-950 shadow-2xl shadow-emerald-950/25">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+                {t("collected_label")}
+              </p>
+              <p className="mt-1 text-4xl font-black text-amber-700">{totalStars}</p>
+              <p className="text-sm font-black">{collectibleLabel}</p>
+            </div>
+
+            <p className="max-w-[260px] rounded-[1.35rem] bg-emerald-950/72 px-4 py-3 text-center text-xs font-bold leading-5 text-emerald-50 ring-1 ring-white/20">
+              {t("start_game_ready_hint")}
+            </p>
+          </aside>
+
+          <div className="order-2 lg:order-2">
             <LeoLevelMap
               prompts={prompts}
               currentIndex={completedLevels}
@@ -93,29 +119,6 @@ function LeoGameStartOverlay({
               variant="adventure"
             />
           </div>
-
-          <aside className="order-3 flex flex-col items-center gap-4 lg:items-stretch">
-            <button
-              type="button"
-              onClick={onStart}
-              disabled={startDisabled}
-              className="w-full max-w-[280px] rounded-[2rem] border-4 border-amber-100 bg-gradient-to-br from-amber-300 via-orange-400 to-orange-500 px-8 py-5 text-lg font-black text-amber-950 shadow-2xl shadow-emerald-950/30 transition hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-60"
-            >
-              {startLabel}
-            </button>
-
-            <div className="w-full max-w-[260px] rounded-[1.75rem] border-4 border-amber-100 bg-amber-50 p-4 text-center text-emerald-950 shadow-2xl shadow-emerald-950/25">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
-                {t("collected_label")}
-              </p>
-              <p className="mt-1 text-4xl font-black text-amber-700">{totalStars}</p>
-              <p className="text-sm font-black">{theme?.collectible || "sound gems"}</p>
-            </div>
-
-            <p className="max-w-[260px] rounded-[1.35rem] bg-emerald-950/72 px-4 py-3 text-center text-xs font-bold leading-5 text-emerald-50 ring-1 ring-white/20">
-              {t("start_game_ready_hint")}
-            </p>
-          </aside>
         </div>
       </div>
     </section>

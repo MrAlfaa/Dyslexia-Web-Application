@@ -14,7 +14,12 @@ import LeoLevelFeedbackToast from "./LeoLevelFeedbackToast";
 import LeoLevelMap from "./LeoLevelMap";
 import { getLeoActivityTheme } from "./leoActivityThemes";
 import useLeoSoundEffects from "./useLeoSoundEffects";
-import { canAttemptProgress, canPlayTargetAudio } from "./speechGameFlow.utils";
+import {
+  canAttemptProgress,
+  canPlayTargetAudio,
+  canSubmitLeoPrompt,
+  createSubmissionFailureFeedback,
+} from "./speechGameFlow.utils";
 
 const isSelectionPrompt = (prompt) =>
   prompt?.taskType === "first_sound" || prompt?.taskType === "minimal_pair";
@@ -233,7 +238,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
   };
 
   const submitPrompt = async (recordingOverride) => {
-    if (!prompt || submitting) return;
+    if (!canSubmitLeoPrompt({ prompt, submitting, feedback })) return;
     const recordingToSubmit = recordingOverride?.audioBlob ? recordingOverride : recording;
     setSubmitting(true);
     setError("");
@@ -324,8 +329,14 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
         }));
         advanceAfterSuccess(1400);
       }
-    } catch (err) {
-      setError(err.response?.data?.message || t("could_not_save_jungle_step"));
+    } catch {
+      setRecording(null);
+      setFeedback(createSubmissionFailureFeedback({
+        promptId: prompt.promptId,
+        childFeedback: t("recording_check_failed"),
+        leoMessage: t("recording_check_failed_hint"),
+      }));
+      setError("");
     } finally {
       setSubmitting(false);
     }
@@ -375,7 +386,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
     return (
       <LeoGameStartOverlay
         title={theme.title || activity.title}
-        subtitle={theme.animalMessage}
+        subtitle={t("follow_sound_path")}
         startLabel={t("start_adventure")}
         onStart={openGame}
         onBack={onCancel}
@@ -438,9 +449,11 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
                 <div>
                   <p className="text-lg font-black text-emerald-950">{t("leo_says")}</p>
                   <p className="mt-1 text-sm font-bold leading-6 text-emerald-800">
-                    {longReadingPrompt && feedback
-                      ? getSentenceFeedbackMessage(feedback.sentenceFeedback, t)
-                      : feedback?.leoMessage || theme.animalMessage}
+                    {feedback?.submissionFailed
+                      ? feedback.leoMessage
+                      : longReadingPrompt && feedback
+                        ? getSentenceFeedbackMessage(feedback.sentenceFeedback, t)
+                        : feedback?.leoMessage || theme.animalMessage}
                   </p>
                 </div>
               </div>
