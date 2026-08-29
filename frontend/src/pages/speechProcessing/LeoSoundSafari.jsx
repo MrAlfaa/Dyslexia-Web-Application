@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   getImprovementStatus,
   getSpeechIdentificationStatus,
   getSpeechSystemActivities,
 } from "../../services/speechProcessing/api";
 import LeoGuide from "./components/LeoGuide";
-import leo from "../../assets/lexiland/leo-lion.png";
+import leo from "../../assets/lexiland/leo-lion.webp";
 
 function LeoSoundSafari() {
   const navigate = useNavigate();
+  const { t } = useTranslation("sp");
   const [status, setStatus] = useState(null);
   const [trainingStatus, setTrainingStatus] = useState(null);
   const [activities, setActivities] = useState([]);
@@ -28,14 +30,14 @@ function LeoSoundSafari() {
         setActivities(activitiesRes.data?.data || []);
         setTrainingStatus(trainingRes.data?.data || null);
       } catch (err) {
-        setError(err.response?.data?.message || "Leo could not load the safari path.");
+        setError(err.response?.data?.message || t("leo_could_not_load_path"));
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, []);
+  }, [t]);
 
   const recommendedActivities = useMemo(() => {
     const ids = status?.recommendedActivityIds || [];
@@ -53,7 +55,7 @@ function LeoSoundSafari() {
     return (
       <main className="child-game-shell flex min-h-screen items-center justify-center bg-emerald-50">
         <div className="rounded-[2rem] bg-white p-8 text-xl font-black shadow-xl">
-          Leo is opening the jungle path...
+          {t("leo_opening_path")}
         </div>
       </main>
     );
@@ -67,22 +69,22 @@ function LeoSoundSafari() {
           onClick={() => navigate("/dashboard")}
           className="mb-6 rounded-full bg-white px-5 py-3 text-sm font-black text-emerald-800 shadow-sm ring-1 ring-emerald-100"
         >
-          Back to LexiLand Map
+          {t("back_to_lexiland_map")}
         </button>
 
         <section className="grid items-center gap-6 rounded-[2.5rem] bg-white/80 p-6 shadow-2xl shadow-emerald-100/70 ring-1 ring-white/80 lg:grid-cols-[1fr_320px]">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-700">
-              Leo the Lion
+              {t("leo_the_lion")}
             </p>
             <h1 className="mt-3 text-5xl font-black tracking-tight sm:text-6xl">
-              Leo's Sound Safari
+              {t("leo_sound_safari_title")}
             </h1>
             <p className="mt-4 max-w-2xl text-lg font-bold leading-8 text-slate-600">
-              Say sounds, collect stars, and follow Leo through the jungle.
+              {t("leo_sound_safari_desc")}
             </p>
           </div>
-          <img src={leo} alt="Leo the Lion" className="mx-auto max-h-72 object-contain" />
+          <img src={leo} alt={t("leo_the_lion")} className="mx-auto max-h-72 object-contain" />
         </section>
 
         {error && (
@@ -93,26 +95,26 @@ function LeoSoundSafari() {
 
         <section className="mt-6 grid gap-5 lg:grid-cols-[0.8fr_1fr]">
           <LeoGuide
-            title="Hi explorer! I'm Leo."
+            title={t("hi_explorer")}
             message={
               identificationComplete
-                ? "I found your sound path. Your guardian can see your learning plan."
-                : "Let's find your sound path with a short sound check."
+                ? t("found_sound_path")
+                : t("lets_find_sound_path")
             }
           />
 
           <div className="rounded-[2rem] bg-white/90 p-6 shadow-xl shadow-emerald-100/60 ring-1 ring-white">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">
-              Identification Adventure
+              {t("identification_adventure")}
             </p>
             <h2 className="mt-2 text-3xl font-black text-slate-950">
-              Leo's First Sound Check
+              {t("first_sound_check")}
             </h2>
 
             {!identificationComplete && (
               <>
                 <p className="mt-3 text-base font-bold leading-7 text-slate-600">
-                  Read each word or sentence, send your sound to Leo, and collect sound gems.
+                  {t("sound_check_desc")}
                 </p>
                 <button
                   type="button"
@@ -120,8 +122,8 @@ function LeoSoundSafari() {
                   className="mt-6 rounded-3xl bg-emerald-700 px-6 py-4 text-sm font-black text-white shadow-xl shadow-emerald-100 transition hover:-translate-y-1 hover:bg-emerald-800"
                 >
                   {identificationStatus === "in_progress"
-                    ? "Continue Sound Check"
-                    : "Start Leo's First Sound Check"}
+                    ? t("continue_sound_check")
+                    : t("start_first_sound_check")}
                 </button>
               </>
             )}
@@ -129,17 +131,22 @@ function LeoSoundSafari() {
             {identificationComplete && !improvementUnlocked && (
               <div className="mt-5 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-100">
                 <h3 className="text-xl font-black text-amber-900">
-                  Leo is waiting
+                  {t("leo_waiting")}
                 </h3>
                 <p className="mt-2 text-sm font-bold leading-6 text-amber-800">
-                  Leo found your sound path. Your training safari will unlock after your full LexiLand check.
+                  {t("training_unlock_explanation")}
                 </p>
+                {devUnlock && (
+                  <p className="mt-3 rounded-2xl bg-white px-4 py-2 text-xs font-black text-violet-700 ring-1 ring-violet-100">
+                    {t("development_preview_enabled")}
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => navigate("/speech-processing/leo-training")}
                   className="mt-5 rounded-3xl bg-white px-5 py-3 text-sm font-black text-amber-900 ring-1 ring-amber-100"
                 >
-                  Preview Training Safari
+                  {t("preview_training_safari")}
                 </button>
               </div>
             )}
@@ -147,17 +154,17 @@ function LeoSoundSafari() {
             {identificationComplete && improvementUnlocked && (
               <div className="mt-5 rounded-3xl bg-emerald-50 p-5 ring-1 ring-emerald-100">
                 <h3 className="text-xl font-black text-emerald-900">
-                  Leo's Training Safari
+                  {t("training_safari_title")}
                 </h3>
                 <p className="mt-2 text-sm font-bold leading-6 text-emerald-800">
-                  Leo's jungle practice games are ready.
+                  {t("training_safari_ready")}
                 </p>
                 <button
                   type="button"
                   onClick={() => navigate("/speech-processing/leo-training")}
                   className="mt-5 rounded-3xl bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-100"
                 >
-                  Start Leo's Training Safari
+                  {t("start_training_safari")}
                 </button>
               </div>
             )}
@@ -166,7 +173,7 @@ function LeoSoundSafari() {
 
         {recommendedActivities.length > 0 && (
           <section className="mt-6 rounded-[2rem] bg-white/85 p-6 shadow-xl shadow-amber-100/50 ring-1 ring-white">
-            <h2 className="text-2xl font-black text-slate-950">Leo's next jungle stops</h2>
+            <h2 className="text-2xl font-black text-slate-950">{t("next_jungle_stops")}</h2>
             <div className="mt-4 flex flex-wrap gap-3">
               {recommendedActivities.map((activity) => (
                 <span

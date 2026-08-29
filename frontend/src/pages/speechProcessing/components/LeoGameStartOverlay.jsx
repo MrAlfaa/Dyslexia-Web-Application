@@ -1,5 +1,6 @@
-import leo from "../../../assets/lexiland/leo-lion.png";
-import jungleMapBg from "../../../assets/lexiland/leo-training-map-bg.png";
+import { useTranslation } from "react-i18next";
+import leo from "../../../assets/lexiland/leo-lion.webp";
+import jungleMapBg from "../../../assets/lexiland/leo-training-map-bg.webp";
 import LeoLevelMap from "./LeoLevelMap";
 
 function LeoGameStartOverlay({
@@ -13,7 +14,9 @@ function LeoGameStartOverlay({
   completedPromptIds = [],
   totalStars = 0,
   theme,
+  startDisabled = false,
 }) {
+  const { t } = useTranslation("sp");
   const totalLevels = prompts.length || 1;
   const completedLevels = completedPromptIds.length;
 
@@ -46,9 +49,6 @@ function LeoGameStartOverlay({
             <span className="rounded-[1.35rem] border-4 border-amber-100 bg-amber-50 px-4 py-2 text-sm font-black text-emerald-950 shadow-xl shadow-emerald-950/20">
               {totalStars} {theme?.collectible || "sound gems"}
             </span>
-            <span className="rounded-full border-4 border-white/70 bg-purple-500 px-4 py-2 text-sm font-black text-white shadow-xl shadow-emerald-950/20">
-              SFX pauses for recording
-            </span>
           </div>
         </div>
 
@@ -56,7 +56,7 @@ function LeoGameStartOverlay({
           <div className="relative mx-auto rounded-[2rem] border-[6px] border-amber-900/45 bg-[linear-gradient(180deg,#9a5a20,#6f3d16)] px-5 py-4 shadow-2xl shadow-emerald-950/45 ring-4 ring-amber-200/65">
             <div className="pointer-events-none absolute inset-x-8 -bottom-4 h-5 rounded-full bg-amber-950/35 blur-sm" />
             <p className="text-xs font-black uppercase tracking-[0.28em] text-amber-100">
-              Leo's Sound Safari
+              {t("leo_sound_safari_title")}
             </p>
             <h1 className="mt-1 text-3xl font-black leading-tight text-white drop-shadow-[0_3px_0_rgba(69,26,3,0.65)] sm:text-4xl lg:text-5xl">
               {title}
@@ -73,7 +73,7 @@ function LeoGameStartOverlay({
             <div className="relative">
               <img
                 src={leo}
-                alt="Leo the Lion"
+                alt={t("leo_the_lion")}
                 className="h-40 object-contain mix-blend-multiply drop-shadow-[0_18px_24px_rgba(6,78,59,0.55)] sm:h-52 lg:h-56"
               />
               <div className="absolute -right-5 top-12 max-w-[150px] rounded-[1.4rem] border-4 border-amber-100 bg-amber-50 px-4 py-3 text-center text-sm font-black leading-5 text-amber-950 shadow-xl shadow-emerald-950/20">
@@ -98,21 +98,22 @@ function LeoGameStartOverlay({
             <button
               type="button"
               onClick={onStart}
-              className="w-full max-w-[280px] rounded-[2rem] border-4 border-amber-100 bg-gradient-to-br from-amber-300 via-orange-400 to-orange-500 px-8 py-5 text-lg font-black text-amber-950 shadow-2xl shadow-emerald-950/30 transition hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-amber-100"
+              disabled={startDisabled}
+              className="w-full max-w-[280px] rounded-[2rem] border-4 border-amber-100 bg-gradient-to-br from-amber-300 via-orange-400 to-orange-500 px-8 py-5 text-lg font-black text-amber-950 shadow-2xl shadow-emerald-950/30 transition hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-60"
             >
               {startLabel}
             </button>
 
             <div className="w-full max-w-[260px] rounded-[1.75rem] border-4 border-amber-100 bg-amber-50 p-4 text-center text-emerald-950 shadow-2xl shadow-emerald-950/25">
               <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
-                Collected
+                {t("collected_label")}
               </p>
               <p className="mt-1 text-4xl font-black text-amber-700">{totalStars}</p>
               <p className="text-sm font-black">{theme?.collectible || "sound gems"}</p>
             </div>
 
             <p className="max-w-[260px] rounded-[1.35rem] bg-emerald-950/72 px-4 py-3 text-center text-xs font-bold leading-5 text-emerald-50 ring-1 ring-white/20">
-              Press start when you are ready. Leo opens the speech task in a focused game window.
+              {t("start_game_ready_hint")}
             </p>
           </aside>
         </div>
