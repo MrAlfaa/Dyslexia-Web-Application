@@ -494,7 +494,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
               className={`min-h-[16rem] ${isRecording ? "pointer-events-none [&_*]:[animation-play-state:paused!important]" : ""}`}
               data-map-active={String(!isRecording)}
               aria-hidden={isRecording}
-              inert={isRecording ? "" : undefined}
+              inert={isRecording || undefined}
             >
               <LeoLevelMap
                 prompts={prompts}

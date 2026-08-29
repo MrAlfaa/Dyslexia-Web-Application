@@ -352,7 +352,7 @@ function AdminLayout({ children }) {
     <div className="guardian-shell min-h-screen overflow-hidden text-[#101828]">
       <div
         className="h-screen"
-        inert={mobileOpen ? "" : undefined}
+        inert={mobileOpen || undefined}
         aria-hidden={mobileOpen ? "true" : undefined}
       >
         <ToastContainer position="top-right" autoClose={3000} />
