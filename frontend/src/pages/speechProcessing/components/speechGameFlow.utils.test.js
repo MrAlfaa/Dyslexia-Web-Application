@@ -8,11 +8,28 @@ import {
   resolveGuardianChildId,
 } from "./speechGameFlow.utils.js";
 
-test("target playback is limited to Echo Roar training", () => {
-  assert.equal(canPlayTargetAudio({ mode: "identification", taskType: "word_read" }), false);
-  assert.equal(canPlayTargetAudio({ mode: "improvement", attemptPhase: "checkpoint", activityId: "leo_echo_roar" }), false);
-  assert.equal(canPlayTargetAudio({ mode: "improvement", attemptPhase: "training", activityId: "leo_echo_roar", taskType: "word_read" }), true);
-  assert.equal(canPlayTargetAudio({ mode: "improvement", attemptPhase: "training", activityId: "leo_robot_words", taskType: "pseudoword_read" }), false);
+test("target playback allows only Echo Roar listen-and-repeat training", () => {
+  assert.equal(canPlayTargetAudio({
+    mode: "improvement",
+    attemptPhase: "training",
+    activityId: "leo_echo_roar",
+    taskType: "listen_repeat",
+  }), true);
+});
+
+test("target playback denies reading, checkpoint, and identification prompts", () => {
+  const deniedContexts = [
+    { mode: "improvement", attemptPhase: "training", activityId: "leo_echo_roar" },
+    { mode: "improvement", attemptPhase: "training", activityId: "leo_echo_roar", taskType: "read_aloud_word" },
+    { mode: "improvement", attemptPhase: "training", activityId: "leo_echo_roar", taskType: "word_read" },
+    { mode: "improvement", attemptPhase: "training", activityId: "leo_echo_roar", taskType: "pseudoword_read" },
+    { mode: "improvement", attemptPhase: "training", activityId: "leo_echo_roar", taskType: "sentence_read" },
+    { mode: "improvement", attemptPhase: "training", activityId: "leo_echo_roar", taskType: "paragraph_segment_read" },
+    { mode: "improvement", attemptPhase: "checkpoint", activityId: "leo_echo_roar", taskType: "listen_repeat" },
+    { mode: "identification", attemptPhase: "training", activityId: "leo_echo_roar", taskType: "listen_repeat" },
+  ];
+
+  deniedContexts.forEach((context) => assert.equal(canPlayTargetAudio(context), false));
 });
 
 test("recorded speech progresses only with an explicit valid completion response", () => {

@@ -29,7 +29,10 @@ const {
 } = require("../services/leoActivityRecommendation.service");
 const { getLeoActivityAccess } = require("../services/leoActivityAccess.service");
 const { getLeoAttemptProgress } = require("../services/leoAttemptProgress.service");
-const { mergeActivityProgress } = require("../services/leoActivityProgress.service");
+const {
+  getActivityAward,
+  mergeActivityProgress,
+} = require("../services/leoActivityProgress.service");
 const {
   predictPronunciationSupport,
 } = require("../services/pronunciationModel.service");
@@ -1567,10 +1570,7 @@ exports.completeImprovementSession = async (req, res) => {
 
     const aggregate = aggregateSupportLevel(attempts, { mode: "improvement" });
     const pronunciationSummary = aggregatePronunciationSummary(attempts);
-    const starsEarned = attempts.reduce(
-      (sum, attempt) => sum + (attempt.starsEarned ?? attempt.itemResult?.starsEarned ?? 0),
-      0
-    );
+    const starsEarned = getActivityAward(attempts);
     const child = await Student.findById(req.user.id).select("lexilandProgress");
     const speech = child.lexilandProgress?.speech || {};
     const prompts = getActivityPrompts(session.activityId);

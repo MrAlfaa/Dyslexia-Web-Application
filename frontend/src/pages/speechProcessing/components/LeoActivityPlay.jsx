@@ -24,6 +24,7 @@ const removeValue = (items, value) => items.filter((item) => item !== value);
 function LeoActivityPlay({ activity, onComplete, onCancel }) {
   const [sessionId, setSessionId] = useState("");
   const [prompts, setPrompts] = useState([]);
+  const [attemptPhase] = useState("training");
   const [index, setIndex] = useState(0);
   const [recording, setRecording] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState("");

@@ -1,9 +1,10 @@
 export const GUARDIAN_SPEECH_CHILD_KEY = "lexilandGuardianSpeechChildId";
 
-export const canPlayTargetAudio = ({ mode, attemptPhase, activityId } = {}) =>
+export const canPlayTargetAudio = ({ mode, attemptPhase, activityId, taskType } = {}) =>
   mode === "improvement" &&
   attemptPhase === "training" &&
-  activityId === "leo_echo_roar";
+  activityId === "leo_echo_roar" &&
+  taskType === "listen_repeat";
 
 export const canAttemptProgress = (result = {}, { selectionPrompt = false } = {}) =>
   result.levelCompleted === true &&

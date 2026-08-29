@@ -5,6 +5,33 @@ const toNonNegativeNumber = (value) => {
 
 const toScore = (value) => Number(toNonNegativeNumber(value).toFixed(2));
 
+const getActivityAward = (attempts = []) => {
+  const bestStarsByPrompt = new Map();
+
+  attempts.forEach((attempt) => {
+    if (
+      !attempt?.promptId ||
+      attempt.attemptPhase === "checkpoint" ||
+      attempt.validAudio !== true ||
+      attempt.selectedCorrect === false
+    ) {
+      return;
+    }
+
+    const starsEarned = Math.max(
+      toNonNegativeNumber(attempt.starsEarned),
+      toNonNegativeNumber(attempt.itemResult?.starsEarned)
+    );
+    const promptId = String(attempt.promptId);
+    bestStarsByPrompt.set(
+      promptId,
+      Math.max(bestStarsByPrompt.get(promptId) || 0, starsEarned)
+    );
+  });
+
+  return Array.from(bestStarsByPrompt.values()).reduce((sum, stars) => sum + stars, 0);
+};
+
 const mergeActivityProgress = ({
   previous,
   sessionAttemptCount,
@@ -28,4 +55,4 @@ const mergeActivityProgress = ({
   };
 };
 
-module.exports = { mergeActivityProgress };
+module.exports = { getActivityAward, mergeActivityProgress };
