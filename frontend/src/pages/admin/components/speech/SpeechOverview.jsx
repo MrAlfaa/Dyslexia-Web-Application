@@ -1,181 +1,268 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import { getAdminStudents, getGuardianSpeechOverview } from "../../../../services/admin/api";
-import GuardianPageHeader from "../../../../components/guardian/ui/GuardianPageHeader";
-import GuardianCard from "../../../../components/guardian/ui/GuardianCard";
-import GuardianStatCard from "../../../../components/guardian/ui/GuardianStatCard";
-import GuardianEmptyState from "../../../../components/guardian/ui/GuardianEmptyState";
-import GuardianStatusBadge from "../../../../components/guardian/ui/GuardianStatusBadge";
-import ChildSelector from "../../../../components/guardian/ui/ChildSelector";
+import {
+  getGuardianSpeechInsight,
+  getGuardianSpeechOverview,
+  getGuardianSpeechProgressComparison,
+  getPronunciationModelEvaluation,
+  refreshGuardianSpeechInsight,
+} from "../../../../services/admin/api";
 import GuardianButton from "../../../../components/guardian/ui/GuardianButton";
+import GuardianCard from "../../../../components/guardian/ui/GuardianCard";
+import GuardianPageHeader from "../../../../components/guardian/ui/GuardianPageHeader";
+import GuardianRequestState from "../../../../components/guardian/ui/GuardianRequestState";
+import GuardianStatCard from "../../../../components/guardian/ui/GuardianStatCard";
+import GuardianStatusBadge from "../../../../components/guardian/ui/GuardianStatusBadge";
+import { useGuardianChild } from "../../../../contexts/GuardianChildContext";
 import { activityTitle, formatPercent } from "./speechGuardianUtils";
+import GuardianSpeechInsightCard from "./GuardianSpeechInsightCard";
+import { useGuardianPageData } from "./shared";
 
-const defaultActivities = [
-  "First Sound Hunt",
-  "Echo Roar",
-  "Robot Word Safari",
-  "Sound Twins",
-  "Story Roar Trail",
-];
-
-const supportSignalText = {
-  low_support: "Low Support",
-  medium_support: "Medium Support",
-  high_support: "High Support",
-};
-
-const formatModelScore = (value) =>
-  value === undefined || value === null || value === "" ? "-" : Number(value).toFixed(2);
+const formatStatus = (value, fallback) =>
+  value ? String(value).replaceAll("_", " ") : fallback;
 
 function SpeechOverview() {
+  const { t, i18n } = useTranslation("sp");
   const navigate = useNavigate();
-  const [children, setChildren] = useState([]);
-  const [selectedChildId, setSelectedChildId] = useState("");
-  const [overview, setOverview] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const adminUser = JSON.parse(localStorage.getItem("adminUser") || "{}");
+  const isSuperAdmin = adminUser.role === "super admin";
+  const {
+    selectedChildId,
+    selectedChild,
+    state: childState,
+    error: childError,
+    refreshChildren,
+  } = useGuardianChild();
+  const [modelEvaluation, setModelEvaluation] = useState(null);
+  const [insightRefreshToken, setInsightRefreshToken] = useState(0);
 
-  const selectedChild = useMemo(
-    () => children.find((child) => child._id === selectedChildId),
-    [children, selectedChildId]
-  );
-
-  useEffect(() => {
-    const loadChildren = async () => {
-      try {
-        const response = await getAdminStudents();
-        const list = response.data?.data || [];
-        setChildren(list);
-        setSelectedChildId(list[0]?._id || "");
-      } catch (error) {
-        toast.error(error.response?.data?.message || "Could not load children");
-      } finally {
-        setLoading(false);
-      }
+  const loadOverview = useCallback(async (childId) => {
+    const [overviewResponse, comparisonResponse] = await Promise.all([
+      getGuardianSpeechOverview(childId),
+      getGuardianSpeechProgressComparison(childId),
+    ]);
+    return {
+      overview: overviewResponse.data?.data || null,
+      comparison: comparisonResponse.data?.data || null,
     };
-    loadChildren();
   }, []);
 
+  const pageRequest = useGuardianPageData({
+    enabled: childState === "ready",
+    selectedChildId,
+    load: loadOverview,
+  });
+
+  const locale = i18n.resolvedLanguage?.startsWith("en") ? "en-US" : "si-LK";
+  const loadInsight = useCallback(
+    async (childId) => {
+      const response = insightRefreshToken
+        ? await refreshGuardianSpeechInsight(childId, locale)
+        : await getGuardianSpeechInsight(childId, locale);
+      return response.data?.data || null;
+    },
+    [insightRefreshToken, locale]
+  );
+  const insightRequest = useGuardianPageData({
+    enabled: childState === "ready",
+    selectedChildId,
+    load: loadInsight,
+  });
+
   useEffect(() => {
-    const loadOverview = async () => {
-      if (!selectedChildId) {
-        setOverview(null);
-        return;
-      }
-      try {
-        const response = await getGuardianSpeechOverview(selectedChildId);
-        setOverview(response.data?.data || null);
-      } catch (error) {
-        setOverview(null);
-        toast.error(error.response?.data?.message || "Could not load Leo overview");
-      }
+    if (!isSuperAdmin) return undefined;
+    let active = true;
+    getPronunciationModelEvaluation()
+      .then((response) => {
+        if (active) setModelEvaluation(response.data?.data || null);
+      })
+      .catch(() => {
+        if (active) setModelEvaluation(null);
+      });
+    return () => {
+      active = false;
     };
-    loadOverview();
-  }, [selectedChildId]);
+  }, [isSuperAdmin]);
 
-  if (loading) {
-    return <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#EAF7F0] border-t-[#157A5A]" />;
-  }
-
+  const overview = pageRequest.data?.overview;
+  const comparison = pageRequest.data?.comparison;
   const speech = overview?.speech || {};
   const recommendation = overview?.recommendation || {};
-  const isComplete = speech.identificationStatus === "completed";
-  const pathActivities = overview?.activities?.length
-    ? overview.activities
-    : defaultActivities.map((title, index) => ({ activityId: title, title, state: index === 0 ? "locked" : "locked" }));
+  const latestSession = overview?.latestSession || {};
+  const identificationComplete = speech.identificationStatus === "completed";
+  const improvementUnlocked = Boolean(speech.improvementUnlocked || overview?.improvementUnlocked);
+  const attempts = latestSession?.attempts || [];
+  const invalidAttempts = attempts.filter(
+    (attempt) => attempt.validAudio === false || attempt.audioQuality?.qualityLabel === "invalid"
+  ).length;
+  const attemptsNeedingReview = latestSession?.phonemeSummary?.attemptsNeedingReview || 0;
+  const attentionItems = (() => {
+    if (!overview) return [];
+    const items = [];
+    if (!identificationComplete) items.push(t("guardian_overview_attention_finish_baseline"));
+    if (identificationComplete && !improvementUnlocked) {
+      items.push(t("guardian_overview_attention_clearer_baseline"));
+    }
+    if (latestSession?.sentenceAnalysisProcessing) {
+      items.push(t("guardian_sentence_processing_message"));
+    }
+    if (invalidAttempts > 0) {
+      items.push(t("guardian_overview_attention_invalid_audio", { count: invalidAttempts }));
+    }
+    if (attemptsNeedingReview > 0) {
+      items.push(t("guardian_overview_attention_sound_review", { count: attemptsNeedingReview }));
+    }
+    return items;
+  })();
+
+  const effectiveState = childState === "ready" ? pageRequest.state : childState;
+  const effectiveError = childState === "ready" ? pageRequest.error : childError;
+  const retry = childState === "ready" ? pageRequest.retry : refreshChildren;
 
   return (
     <div className="space-y-5">
-      <GuardianPageHeader
-        title="Leo's Sound Safari"
-        subtitle="Speech-reading support overview and next practice path."
-        actions={<ChildSelector childrenList={children} selectedChildId={selectedChildId} onChange={setSelectedChildId} />}
-      />
+      <GuardianPageHeader title={t("guardian_overview_title")} subtitle={t("guardian_overview_subtitle")} />
 
-      {!selectedChild ? (
-        <GuardianEmptyState title="No children yet" message="Add a child profile to see Leo's speech-reading support overview." />
+      {effectiveState !== "ready" ? (
+        <GuardianRequestState
+          state={effectiveState}
+          error={effectiveError}
+          onRetry={retry}
+          onAddChild={() => navigate("/admin/students")}
+        />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <GuardianStatCard label="Selected Child" value={selectedChild.fullName} helper={selectedChild.username || "No username"} tone="slate" />
-            <GuardianStatCard label="Identification" value={<GuardianStatusBadge value={speech.identificationStatus || "not_started"} />} helper="Leo's First Sound Check" tone="sky" />
-            <GuardianStatCard label="Support Indicator" value={<GuardianStatusBadge value={overview?.supportLevel || "unknown"} type="support" />} helper={formatPercent(overview?.supportScore)} tone="amber" />
-            <GuardianStatCard label="Next Activity" value={activityTitle(recommendation?.nextActivity || overview?.nextActivity)} helper={recommendation?.skillFocus || overview?.nextActivity?.skill || "Waiting"} tone="emerald" />
-          </div>
+          <section aria-labelledby="guardian-current-state">
+            <h3 id="guardian-current-state" className="mb-3 text-lg font-bold text-[#101828]">
+              {t("guardian_overview_current_state")}
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <GuardianStatCard
+                label={t("guardian_selected_child")}
+                value={selectedChild?.fullName || t("guardian_not_available")}
+                helper={selectedChild?.grade ? t("guardian_grade", { grade: selectedChild.grade }) : ""}
+                tone="slate"
+              />
+              <GuardianStatCard
+                label={t("guardian_identification")}
+                value={<GuardianStatusBadge value={speech.identificationStatus || "not_started"} />}
+                helper={t("guardian_first_sound_check")}
+                tone="sky"
+              />
+              <GuardianStatCard
+                label={t("guardian_training_safari")}
+                value={improvementUnlocked ? t("guardian_unlocked") : t("guardian_locked")}
+                helper={t("guardian_training_state_helper")}
+                tone={improvementUnlocked ? "emerald" : "amber"}
+              />
+              <GuardianStatCard
+                label={t("guardian_completed_activities")}
+                value={`${speech.completedActivityIds?.length || 0}/5`}
+                helper={t("guardian_activity_progress_helper")}
+                tone="emerald"
+              />
+            </div>
+          </section>
 
-          <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-            <GuardianCard>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold text-[#157A5A]">Leo Summary</p>
-                  <h3 className="mt-2 text-[22px] font-bold tracking-[-0.01em] text-[#101828]">
-                    {isComplete ? "Leo found this child's sound path." : "Leo's First Sound Check is waiting."}
-                  </h3>
-                </div>
-                <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FFF6DF] text-lg font-bold text-[#94600A] sm:flex">
-                  L
-                </div>
+          <GuardianCard className={attentionItems.length ? "border-[#F4D7A1] bg-[#FFF9EB]" : "border-[#D8ECE3] bg-[#F8FBF8]"}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_overview_attention_title")}</p>
+                <h3 className="mt-1 text-xl font-bold text-[#101828]">
+                  {attentionItems.length ? t("guardian_overview_attention_found") : t("guardian_overview_attention_clear")}
+                </h3>
               </div>
-              <p className="mt-3 text-sm font-medium leading-6 text-[#5B6475]">
-                {isComplete
-                  ? recommendation?.guardianReason || "Use this support indicator with the other LexiLand checks to understand the next practice path."
-                  : "Ask your child to complete the check to unlock a clearer support path."}
-              </p>
-              <div className="mt-4 rounded-2xl border border-[#D8EAF7] bg-[#F3FAFF] p-4">
-                <p className="text-sm font-semibold text-[#24516F]">Pronunciation Support Signal</p>
-                <p className="mt-1 text-sm font-medium text-[#37556D]">
-                  {supportSignalText[overview?.latestSession?.pronunciationSummary?.dominantPrediction] ||
-                    overview?.latestSession?.pronunciationSummary?.status ||
-                    "No prototype model signal yet"}
-                  {" "}· Score {formatModelScore(overview?.latestSession?.pronunciationSummary?.meanPronunciationScore)}
+              <GuardianStatusBadge value={attentionItems.length ? "needs_review" : "completed"} />
+            </div>
+            {attentionItems.length > 0 && (
+              <ul className="mt-4 grid gap-2 text-sm font-medium leading-6 text-[#6E4A0A] md:grid-cols-2">
+                {attentionItems.map((item) => (
+                  <li key={item} className="rounded-lg bg-white/70 px-3 py-2">{item}</li>
+                ))}
+              </ul>
+            )}
+          </GuardianCard>
+
+          <GuardianCard className="border-[#CFE6DC] bg-white">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <div>
+                <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_overview_next_action")}</p>
+                <h3 className="mt-1 text-2xl font-bold text-[#101828]">
+                  {activityTitle(recommendation.nextActivity || overview?.nextActivity) || t("guardian_waiting_for_next_activity")}
+                </h3>
+                <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-[#5B6475]">
+                  {recommendation.guardianReason || t("guardian_overview_next_action_fallback")}
                 </p>
               </div>
-              <div className="mt-5">
-                <GuardianButton
-                  variant="secondary"
-                  onClick={() => navigate("/admin/speech-identification-result")}
-                >
-                  View Identification Result
-                </GuardianButton>
+              <GuardianButton onClick={() => navigate("/admin/speech-improvement-progress")}>
+                {t("guardian_view_improvement_progress")}
+              </GuardianButton>
+            </div>
+          </GuardianCard>
+
+          <GuardianCard>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_overview_trend_title")}</p>
+                <h3 className="mt-1 text-xl font-bold text-[#101828]">{t("guardian_overview_trend_heading")}</h3>
+              </div>
+              <GuardianStatusBadge value={comparison?.currentTrend || "not_started"} />
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <GuardianStatCard label={t("guardian_timeline_baseline")} value={formatStatus(comparison?.baseline?.status, t("guardian_not_started"))} tone="slate" />
+              <GuardianStatCard label={t("guardian_trail_checks")} value={`${comparison?.checkpoints?.length || 0}/3`} tone="sky" />
+              <GuardianStatCard label={t("guardian_current_trend")} value={formatStatus(comparison?.currentTrend, t("guardian_waiting"))} tone="emerald" />
+            </div>
+          </GuardianCard>
+
+          <GuardianCard>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_overview_evidence_title")}</p>
+                <h3 className="mt-1 text-xl font-bold text-[#101828]">{t("guardian_overview_evidence_heading")}</h3>
+              </div>
+              <GuardianButton variant="secondary" onClick={() => navigate("/admin/speech-session-history")}>
+                {t("guardian_review_sessions")}
+              </GuardianButton>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <GuardianStatCard label={t("guardian_valid_recordings")} value={(attempts.length || 0) - invalidAttempts} helper={t("guardian_of_total_attempts", { count: attempts.length || 0 })} tone="sky" />
+              <GuardianStatCard
+                label={t("guardian_word_reading")}
+                value={latestSession?.wordReadingSummary?.wordReadingAccuracy === undefined ? t("guardian_not_available") : formatPercent(latestSession.wordReadingSummary.wordReadingAccuracy)}
+                helper={t("guardian_correct_words", { count: latestSession?.wordReadingSummary?.correctWordCount || 0 })}
+                tone="emerald"
+              />
+              <GuardianStatCard
+                label={t("guardian_sound_patterns")}
+                value={latestSession?.phonemeSummary?.meanPhonemeErrorRate === undefined ? t("guardian_not_available") : formatPercent(latestSession.phonemeSummary.meanPhonemeErrorRate)}
+                helper={latestSession?.phonemeSummary?.commonErrorPattern || t("guardian_no_common_pattern")}
+                tone="amber"
+              />
+              <GuardianStatCard label={t("guardian_attempts_to_review")} value={attemptsNeedingReview} helper={t("guardian_review_recordings_helper")} tone="slate" />
+            </div>
+          </GuardianCard>
+
+          <GuardianSpeechInsightCard
+            data={insightRequest.data}
+            loading={insightRequest.state === "loading" && !insightRequest.data}
+            error={insightRequest.error?.response?.data?.message || insightRequest.error?.message || ""}
+            onRefresh={() => setInsightRefreshToken((value) => value + 1)}
+            refreshing={insightRequest.state === "loading" && Boolean(insightRequest.data)}
+            isSuperAdmin={isSuperAdmin}
+          />
+
+          {isSuperAdmin && modelEvaluation && (
+            <GuardianCard className="border-[#D8EAF7] bg-[#F3FAFF]">
+              <p className="text-sm font-semibold text-[#24516F]">{t("guardian_super_admin_model_evidence")}</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <GuardianStatCard label={t("guardian_model_status")} value={modelEvaluation.status || "-"} tone="sky" />
+                <GuardianStatCard label={t("guardian_reported_accuracy")} value={formatPercent(modelEvaluation.reportedMetrics?.random_forest?.accuracy)} tone="slate" />
+                <GuardianStatCard label={t("guardian_reported_macro_f1")} value={formatPercent(modelEvaluation.reportedMetrics?.random_forest?.macro_f1)} tone="slate" />
               </div>
             </GuardianCard>
-
-            <GuardianCard>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold text-[#157A5A]">Training Path Preview</p>
-                  <h3 className="mt-2 text-xl font-bold text-[#101828]">Leo's practice sequence</h3>
-                </div>
-                <GuardianButton variant="ghost" onClick={() => navigate("/admin/speech-improvement-progress")}>
-                  View Progress
-                </GuardianButton>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {pathActivities.slice(0, 5).map((activity, index) => (
-                  <div key={activity.activityId} className="flex items-center gap-3 rounded-2xl border border-[#E5EDE7] bg-[#F8FBF8] p-3">
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold ${
-                      activity.state === "completed"
-                        ? "bg-[#157A5A] text-white"
-                        : activity.state === "current" || activity.state === "recommended" || activity.state === "available"
-                          ? "bg-[#F5B84B] text-[#10241E]"
-                          : "bg-white text-[#5B6475]"
-                    }`}
-                    >
-                      {index + 1}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-[#101828]">{activity.title}</p>
-                      <p className="text-xs font-medium text-[#5B6475]">
-                        {activity.state || "locked"} · {activity.starsEarned || activity.stars || 0} stars
-                      </p>
-                    </div>
-                    <GuardianStatusBadge value={activity.state || "locked"} />
-                  </div>
-                ))}
-              </div>
-            </GuardianCard>
-          </div>
+          )}
         </>
       )}
     </div>

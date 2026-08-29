@@ -1,4 +1,6 @@
-import React from "react";
+/* eslint-disable react-refresh/only-export-components */
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createLatestRequestTracker } from "./SpeechProgressTimeline.utils";
 
 export const GRADES = ["2", "3", "4", "5"];
 export const TASK_TYPES = [
@@ -71,6 +73,54 @@ export const PageHeader = ({ title, subtitle, actions }) => (
     {actions && <div className="flex flex-wrap gap-3">{actions}</div>}
   </div>
 );
+
+export const useGuardianPageData = ({ enabled, selectedChildId, load }) => {
+  const trackerRef = useRef(createLatestRequestTracker());
+  const [result, setResult] = useState({ childId: "", data: null });
+  const [requestState, setRequestState] = useState("loading");
+  const [error, setError] = useState(null);
+
+  const run = useCallback(async () => {
+    if (!enabled || !selectedChildId) return;
+
+    const childId = selectedChildId;
+    const requestId = trackerRef.current.next();
+    setRequestState("loading");
+    setError(null);
+
+    try {
+      const data = await load(childId);
+      if (!trackerRef.current.isCurrent(requestId)) return;
+      setResult({ childId, data });
+      setRequestState("ready");
+    } catch (requestError) {
+      if (!trackerRef.current.isCurrent(requestId)) return;
+      setResult({ childId, data: null });
+      setError(requestError);
+      setRequestState("request_failed");
+    }
+  }, [enabled, load, selectedChildId]);
+
+  useEffect(() => {
+    if (!enabled || !selectedChildId) {
+      trackerRef.current.invalidate();
+      return undefined;
+    }
+
+    const tracker = trackerRef.current;
+    void Promise.resolve().then(run);
+    return () => tracker.invalidate();
+  }, [enabled, run, selectedChildId]);
+
+  const matchesSelectedChild = result.childId === selectedChildId;
+
+  return {
+    data: matchesSelectedChild ? result.data : null,
+    state: matchesSelectedChild ? requestState : "loading",
+    error: matchesSelectedChild ? error : null,
+    retry: run,
+  };
+};
 
 export const downloadBlob = (response, filename) => {
   const blob = new Blob([response.data], { type: "text/csv;charset=utf-8" });

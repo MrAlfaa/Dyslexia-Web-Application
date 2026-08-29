@@ -1,151 +1,181 @@
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "react-toastify";
-import { getAdminStudents, getGuardianSpeechIdentificationResult, getSpeechSystemActivities } from "../../../../services/admin/api";
-import GuardianPageHeader from "../../../../components/guardian/ui/GuardianPageHeader";
+import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import {
+  getGuardianSpeechIdentificationResult,
+  getSpeechSystemActivities,
+} from "../../../../services/admin/api";
 import GuardianCard from "../../../../components/guardian/ui/GuardianCard";
+import GuardianPageHeader from "../../../../components/guardian/ui/GuardianPageHeader";
+import GuardianRequestState from "../../../../components/guardian/ui/GuardianRequestState";
 import GuardianStatCard from "../../../../components/guardian/ui/GuardianStatCard";
-import GuardianEmptyState from "../../../../components/guardian/ui/GuardianEmptyState";
 import GuardianStatusBadge from "../../../../components/guardian/ui/GuardianStatusBadge";
-import ChildSelector from "../../../../components/guardian/ui/ChildSelector";
+import { useGuardianChild } from "../../../../contexts/GuardianChildContext";
 import { activityById, formatDate, formatPercent } from "./speechGuardianUtils";
-
-const supportSignalText = {
-  low_support: "Low Support",
-  medium_support: "Medium Support",
-  high_support: "High Support",
-};
-
-const formatModelScore = (value) =>
-  value === undefined || value === null || value === "" ? "-" : Number(value).toFixed(2);
+import { useGuardianPageData } from "./shared";
 
 function SpeechIdentificationResult() {
-  const [children, setChildren] = useState([]);
-  const [selectedChildId, setSelectedChildId] = useState("");
-  const [activities, setActivities] = useState([]);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { t } = useTranslation("sp");
+  const navigate = useNavigate();
+  const adminUser = JSON.parse(localStorage.getItem("adminUser") || "{}");
+  const isSuperAdmin = adminUser.role === "super admin";
+  const {
+    selectedChildId,
+    state: childState,
+    error: childError,
+    refreshChildren,
+  } = useGuardianChild();
 
-  const selectedChild = useMemo(
-    () => children.find((child) => child._id === selectedChildId),
-    [children, selectedChildId]
-  );
-
-  useEffect(() => {
-    const loadBase = async () => {
-      try {
-        const [childrenRes, activitiesRes] = await Promise.all([getAdminStudents(), getSpeechSystemActivities()]);
-        const list = childrenRes.data?.data || [];
-        setChildren(list);
-        setSelectedChildId(list[0]?._id || "");
-        setActivities(activitiesRes.data?.data || []);
-      } catch (error) {
-        toast.error(error.response?.data?.message || "Could not load identification result");
-      } finally {
-        setLoading(false);
-      }
+  const loadIdentification = useCallback(async (childId) => {
+    const [resultResponse, activitiesResponse] = await Promise.all([
+      getGuardianSpeechIdentificationResult(childId),
+      getSpeechSystemActivities(),
+    ]);
+    return {
+      result: resultResponse.data?.data || null,
+      activities: activitiesResponse.data?.data || [],
     };
-    loadBase();
   }, []);
+  const pageRequest = useGuardianPageData({
+    enabled: childState === "ready",
+    selectedChildId,
+    load: loadIdentification,
+  });
 
-  useEffect(() => {
-    const loadResult = async () => {
-      if (!selectedChildId) {
-        setResult(null);
-        return;
-      }
-      try {
-        const response = await getGuardianSpeechIdentificationResult(selectedChildId);
-        setResult(response.data?.data || null);
-      } catch (error) {
-        setResult(null);
-        toast.error(error.response?.data?.message || "Could not load Leo's result");
-      }
-    };
-    loadResult();
-  }, [selectedChildId]);
-
-  if (loading) {
-    return <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#EAF7F0] border-t-[#157A5A]" />;
-  }
-
+  const effectiveState = childState === "ready" ? pageRequest.state : childState;
+  const effectiveError = childState === "ready" ? pageRequest.error : childError;
+  const retry = childState === "ready" ? pageRequest.retry : refreshChildren;
+  const result = pageRequest.data?.result;
+  const activities = pageRequest.data?.activities || [];
+  const attempts = result?.attemptsSummary || {};
+  const audio = attempts.audioQualitySummary || {};
+  const wordReading = attempts.wordReadingSummary || {};
+  const phoneme = attempts.phonemeSummary || {};
   const recommendedIds = result?.recommendedActivityIds || [];
+  const baselineComplete = result?.identificationStatus === "completed";
 
   return (
     <div className="space-y-5">
       <GuardianPageHeader
-        title="Identification Result"
-        subtitle="Review Leo's First Sound Check and the recommended speech-reading practice path."
-        actions={<ChildSelector childrenList={children} selectedChildId={selectedChildId} onChange={setSelectedChildId} />}
+        title={t("guardian_identification_title")}
+        subtitle={t("guardian_identification_subtitle")}
       />
 
-      {!selectedChild ? (
-        <GuardianEmptyState title="No children yet" message="Add a child to review Leo's Sound Safari results." />
+      {effectiveState !== "ready" ? (
+        <GuardianRequestState
+          state={effectiveState}
+          error={effectiveError}
+          onRetry={retry}
+          onAddChild={() => navigate("/admin/students")}
+        />
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+        <>
           <GuardianCard>
-            <p className="text-sm font-semibold text-[#157A5A]">Result Summary</p>
-            <h3 className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[#101828]">
-              {result?.identificationStatus === "completed"
-                ? "Leo found this child's speech-reading support path."
-                : "Leo's First Sound Check is not complete yet."}
-            </h3>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <GuardianStatCard label="Status" value={<GuardianStatusBadge value={result?.identificationStatus || "not_started"} />} tone="sky" />
-              <GuardianStatCard label="Support Level" value={<GuardianStatusBadge value={result?.supportLevel || "unknown"} type="support" />} tone="amber" />
-              <GuardianStatCard label="Support Score" value={formatPercent(result?.supportScore)} helper="Placeholder indicator" tone="emerald" />
-              <GuardianStatCard label="Completed" value={formatDate(result?.completedAt)} tone="slate" />
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_baseline_completeness")}</p>
+                <h3 className="mt-1 text-2xl font-bold text-[#101828]">
+                  {baselineComplete
+                    ? t("guardian_baseline_complete_heading")
+                    : t("guardian_baseline_waiting_heading")}
+                </h3>
+                <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-[#5B6475]">
+                  {baselineComplete
+                    ? t("guardian_baseline_complete_message")
+                    : t("guardian_baseline_waiting_message")}
+                </p>
+              </div>
+              <GuardianStatusBadge value={result?.identificationStatus || "not_started"} />
             </div>
-
-            <div className="mt-5 rounded-2xl border border-[#D8EAF7] bg-[#F3FAFF] p-4">
-              <p className="text-sm font-medium leading-6 text-[#37556D]">
-                This is a speech-reading support indicator used with other LexiLand checks to plan support. It is not a clinical diagnosis.
-              </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <GuardianStatCard label={t("guardian_total_attempts")} value={attempts.totalAttemptCount || 0} tone="slate" />
+              <GuardianStatCard label={t("guardian_valid_recordings")} value={attempts.validAttemptCount || 0} tone="emerald" />
+              <GuardianStatCard label={t("guardian_completed_date")} value={formatDate(result?.completedAt)} tone="sky" />
             </div>
           </GuardianCard>
 
-          <div className="space-y-5">
-            <GuardianCard>
-              <p className="text-sm font-semibold text-[#157A5A]">Recommended Leo Activities</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {recommendedIds.length ? (
-                  recommendedIds.map((id) => (
-                    <span key={id} className="rounded-full border border-[#D8ECE3] bg-[#F3FBF7] px-3 py-1.5 text-sm font-semibold text-[#0F5F48]">
-                      {activityById(activities, id)?.title || id}
-                    </span>
-                  ))
-                ) : (
-                  <span className="rounded-full border border-[#E5EDE7] bg-[#F5F7F6] px-3 py-1.5 text-sm font-semibold text-[#5B6475]">
-                    No recommendation yet
-                  </span>
-                )}
-              </div>
-            </GuardianCard>
+          <GuardianCard>
+            <div>
+              <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_evidence_quality")}</p>
+              <h3 className="mt-1 text-xl font-bold text-[#101828]">{t("guardian_recording_quality_heading")}</h3>
+              <p className="mt-2 text-sm font-medium leading-6 text-[#5B6475]">{t("guardian_recording_quality_message")}</p>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-4">
+              <GuardianStatCard label={t("guardian_good_audio")} value={audio.good || 0} tone="emerald" />
+              <GuardianStatCard label={t("guardian_fair_audio")} value={audio.fair || 0} tone="sky" />
+              <GuardianStatCard label={t("guardian_poor_audio")} value={audio.poor || 0} tone="amber" />
+              <GuardianStatCard label={t("guardian_invalid_recordings")} value={audio.invalid || 0} tone="slate" />
+            </div>
+          </GuardianCard>
 
-            <GuardianCard>
-              <p className="text-sm font-semibold text-[#157A5A]">Latest Session</p>
-              <dl className="mt-4 grid gap-3 text-sm">
+          <GuardianCard>
+            <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_observations")}</p>
+            <h3 className="mt-1 text-xl font-bold text-[#101828]">{t("guardian_observations_heading")}</h3>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <GuardianStatCard
+                label={t("guardian_word_reading")}
+                value={wordReading.wordReadingAccuracy === undefined ? t("guardian_not_available") : formatPercent(wordReading.wordReadingAccuracy)}
+                helper={t("guardian_correct_words", { count: wordReading.correctWordCount || 0 })}
+                tone="emerald"
+              />
+              <GuardianStatCard
+                label={t("guardian_sound_patterns")}
+                value={phoneme.meanPhonemeErrorRate === undefined ? t("guardian_not_available") : formatPercent(phoneme.meanPhonemeErrorRate)}
+                helper={phoneme.commonErrorPattern || t("guardian_no_common_pattern")}
+                tone="amber"
+              />
+              <GuardianStatCard
+                label={t("guardian_attempts_to_review")}
+                value={phoneme.attemptsNeedingReview || 0}
+                helper={t("guardian_review_recordings_helper")}
+                tone="slate"
+              />
+              <GuardianStatCard
+                label={t("guardian_baseline_use")}
+                value={baselineComplete ? t("guardian_ready_for_comparison") : t("guardian_not_ready")}
+                helper={t("guardian_baseline_use_helper")}
+                tone="sky"
+              />
+            </div>
+          </GuardianCard>
+
+          <GuardianCard className="border-[#CFE6DC] bg-[#F8FBF8]">
+            <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_next_step")}</p>
+            <h3 className="mt-1 text-xl font-bold text-[#101828]">
+              {recommendedIds.length ? t("guardian_recommended_leo_activities") : t("guardian_waiting_for_recommendation")}
+            </h3>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {recommendedIds.length ? (
+                recommendedIds.map((id) => (
+                  <span key={id} className="rounded-lg border border-[#D8ECE3] bg-white px-3 py-2 text-sm font-semibold text-[#0F5F48]">
+                    {activityById(activities, id)?.title || id}
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm font-medium text-[#5B6475]">{t("guardian_complete_baseline_for_recommendation")}</p>
+              )}
+            </div>
+          </GuardianCard>
+
+          {isSuperAdmin && result?.recentSession && (
+            <GuardianCard className="border-[#D8EAF7] bg-[#F3FAFF]">
+              <p className="text-sm font-semibold text-[#24516F]">{t("guardian_super_admin_technical_evidence")}</p>
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {[
-                  ["Status", result?.recentSession?.status || "-"],
-                  ["Model", result?.recentSession?.modelVersion || "placeholder_v1"],
-                  ["Pronunciation Support Signal", supportSignalText[result?.recentSession?.pronunciationSummary?.dominantPrediction] || result?.recentSession?.pronunciationSummary?.status || "No signal"],
-                  ["Prototype score", formatModelScore(result?.recentSession?.pronunciationSummary?.meanPronunciationScore)],
-                  ["Model predictions", result?.recentSession?.pronunciationSummary?.validPredictionCount ?? 0],
-                  ["Attempts", `${result?.attemptsSummary?.validAttemptCount || 0}/${result?.attemptsSummary?.totalAttemptCount || 0} valid`],
-                  ["Good audio", result?.attemptsSummary?.audioQualitySummary?.good ?? 0],
-                  ["Fair audio", result?.attemptsSummary?.audioQualitySummary?.fair ?? 0],
-                  ["Invalid recordings", result?.attemptsSummary?.audioQualitySummary?.invalid ?? 0],
-                  ["Completed", formatDate(result?.completedAt)],
+                  [t("guardian_model_version"), result.recentSession.modelVersion || "-"],
+                  [t("guardian_snapshot_status"), result.recentSession.snapshotStatus || "-"],
+                  [t("guardian_prediction_count"), result.recentSession.pronunciationSummary?.validPredictionCount || 0],
+                  [t("guardian_support_score"), result.supportScore === undefined ? "-" : formatPercent(result.supportScore)],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between gap-4 rounded-2xl bg-[#F8FBF8] px-4 py-3">
-                    <dt className="font-medium text-[#5B6475]">{label}</dt>
-                    <dd className="text-right font-semibold text-[#101828]">{value}</dd>
+                  <div key={label} className="rounded-lg bg-white px-4 py-3">
+                    <dt className="text-xs font-semibold text-[#5B6475]">{label}</dt>
+                    <dd className="mt-1 font-bold text-[#101828]">{value}</dd>
                   </div>
                 ))}
               </dl>
             </GuardianCard>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );
