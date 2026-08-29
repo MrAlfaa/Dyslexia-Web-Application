@@ -18,8 +18,8 @@ export const buildSessionTabs = ({ isSuperAdmin = false } = {}) => {
   return tabs;
 };
 
-export const summarizeSessionQuality = (session = {}) => {
-  const attempts = Array.isArray(session.attempts) ? session.attempts : [];
+export const summarizeSessionQuality = (session) => {
+  const attempts = Array.isArray(session?.attempts) ? session.attempts : [];
   const counts = attempts.reduce(
     (summary, attempt) => {
       const label = attempt.audioQuality?.qualityLabel;

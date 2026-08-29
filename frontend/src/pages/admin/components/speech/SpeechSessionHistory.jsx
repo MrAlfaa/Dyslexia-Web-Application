@@ -39,8 +39,6 @@ const getActivityTitle = (session, t) =>
 
 function SpeechSessionHistory() {
   const { t, i18n } = useTranslation("sp");
-  const adminUser = JSON.parse(localStorage.getItem("adminUser") || "{}");
-  const isSuperAdmin = adminUser.role === "super admin";
   const {
     selectedChildId,
     selectedChild,
@@ -66,6 +64,12 @@ function SpeechSessionHistory() {
     load: loadHistory,
   });
   const history = pageRequest.data;
+  const canViewTechnical = Boolean(history?.viewer?.canViewTechnical);
+
+  useEffect(() => () => {
+    actionSequenceRef.current += 1;
+    selectedSessionRef.current = null;
+  }, []);
 
   useEffect(() => {
     selectedChildIdRef.current = selectedChildId;
@@ -114,7 +118,7 @@ function SpeechSessionHistory() {
 
   const recomputeSelectedSession = async () => {
     const session = selectedSessionRef.current;
-    if (!isSuperAdmin || !session?._id || adminActionId) return;
+    if (!canViewTechnical || !session?._id || adminActionId) return;
 
     const sessionId = session._id;
     const childId = selectedChildIdRef.current;
@@ -151,7 +155,7 @@ function SpeechSessionHistory() {
 
   const reprocessAttempt = async (attemptId) => {
     const session = selectedSessionRef.current;
-    if (!isSuperAdmin || !attemptId || !session?._id || adminActionId) return;
+    if (!canViewTechnical || !attemptId || !session?._id || adminActionId) return;
 
     const sessionId = session._id;
     const childId = selectedChildIdRef.current;
@@ -282,15 +286,17 @@ function SpeechSessionHistory() {
         </>
       )}
 
-      <SpeechSessionDrawer
-        key={selectedSession?._id || "closed"}
-        session={selectedSession}
-        isSuperAdmin={isSuperAdmin}
-        actionId={adminActionId}
-        onClose={closeSession}
-        onRecompute={recomputeSelectedSession}
-        onReprocess={reprocessAttempt}
-      />
+      {selectedSession && (
+        <SpeechSessionDrawer
+          key={selectedSession._id}
+          session={selectedSession}
+          isSuperAdmin={canViewTechnical}
+          actionId={adminActionId}
+          onClose={closeSession}
+          onRecompute={recomputeSelectedSession}
+          onReprocess={reprocessAttempt}
+        />
+      )}
     </div>
   );
 }

@@ -31,6 +31,9 @@ const {
 const { getLeoActivityAccess } = require("../services/leoActivityAccess.service");
 const { getLeoAttemptProgress } = require("../services/leoAttemptProgress.service");
 const {
+  shapeSessionHistoryForRole,
+} = require("../services/guardianSessionHistoryResponse.service");
+const {
   buildLeoImprovementAttemptPolicy,
 } = require("../services/leoImprovementAttemptPolicy.service");
 const {
@@ -1785,6 +1788,7 @@ exports.getGuardianSessionHistory = async (req, res) => {
       .lean();
     if (!child) return res.status(404).json({ success: false, message: "Child not found" });
     if (!canAccessChild(req, child)) return res.status(403).json({ success: false, message: "Access denied" });
+    const superAdminView = isSuperAdminRequest(req);
 
     const sessions = await SpeechSession.find({ studentId: child._id })
       .sort({ createdAt: -1 })
@@ -1805,11 +1809,15 @@ exports.getGuardianSessionHistory = async (req, res) => {
       success: true,
       data: {
         child: { id: child._id, fullName: child.fullName, username: child.username, grade: child.grade },
-        sessions: sessions.map((session) => ({
-          ...session,
-          activity: getActivityById(session.activityId) || null,
-          attempts: attemptsBySession[String(session._id)] || [],
-        })),
+        viewer: { canViewTechnical: superAdminView },
+        sessions: sessions.map((session) =>
+          shapeSessionHistoryForRole({
+            session,
+            canViewTechnical: superAdminView,
+            activity: getActivityById(session.activityId) || null,
+            attempts: attemptsBySession[String(session._id)] || [],
+          })
+        ),
       },
     });
   } catch (error) {

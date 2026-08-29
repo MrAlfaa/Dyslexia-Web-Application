@@ -5,14 +5,9 @@ import "react-toastify/dist/ReactToastify.css";
 import { useGuardianChild } from "../../contexts/GuardianChildContext";
 import ChildSelector from "../guardian/ui/ChildSelector";
 import GuardianRequestState from "../guardian/ui/GuardianRequestState";
+import { isSelfManagedChildStateRoute } from "./adminLayoutRouteState.utils";
 
 const SIDEBAR_KEY = "lexilandGuardianSidebarCollapsed";
-const SPEECH_MONITORING_ROUTES = new Set([
-  "/admin/speech-overview",
-  "/admin/speech-identification-result",
-  "/admin/speech-improvement-progress",
-  "/admin/speech-session-history",
-]);
 
 const Icon = ({ type }) => {
   const paths = {
@@ -177,7 +172,7 @@ function AdminLayout({ children }) {
   const user = JSON.parse(localStorage.getItem("adminUser") || "{}");
   const isSuperAdmin = user.role === "super admin";
   const normalizedPathname = location.pathname.replace(/\/+$/, "") || "/";
-  const isSpeechMonitoringRoute = SPEECH_MONITORING_ROUTES.has(normalizedPathname);
+  const isSelfManagedChildRoute = isSelfManagedChildStateRoute(normalizedPathname);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_KEY) === "true");
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebarNavRef = useRef(null);
@@ -414,7 +409,7 @@ function AdminLayout({ children }) {
               </div>
             </div>
 
-            {(childRequestState === "ready" || !isSpeechMonitoringRoute) && (
+            {(childRequestState === "ready" || !isSelfManagedChildRoute) && (
               <div className="border-t border-[#EDF1EF] bg-[#F8FAF9] px-4 py-2 md:px-6">
                 {childRequestState === "ready" ? (
                   <div className="mx-auto flex min-h-11 w-full max-w-[1200px] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

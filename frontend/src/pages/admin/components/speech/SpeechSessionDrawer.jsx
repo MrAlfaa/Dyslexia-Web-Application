@@ -230,7 +230,7 @@ function TechnicalTab({ session, attempts, actionId, onRecompute, onReprocess, t
           <div><dt className="font-bold text-[#5B6475]">{t("guardian_prediction_count")}</dt><dd>{summary.validPredictionCount ?? unavailable}</dd></div>
           <div><dt className="font-bold text-[#5B6475]">{t("guardian_model_version")}</dt><dd>{summary.modelVersion || session.modelVersion || unavailable}</dd></div>
           <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_model_score")}</dt><dd>{formatNumber(summary.meanPronunciationScore, unavailable)}</dd></div>
-          <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_dataset_readiness")}</dt><dd>{String(Boolean(readiness.datasetReady))}</dd></div>
+          <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_dataset_readiness")}</dt><dd>{t(readiness.datasetReady ? "guardian_session_yes" : "guardian_session_no")}</dd></div>
           <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_manual_labels")}</dt><dd>{readiness.labelledAttemptCount ?? unavailable}</dd></div>
           <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_support_labels")}</dt><dd>{readiness.supportLabelCount ?? unavailable}</dd></div>
         </dl>

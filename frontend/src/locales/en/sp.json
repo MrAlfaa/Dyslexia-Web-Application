@@ -449,5 +449,7 @@
   "guardian_session_confidence": "Confidence",
   "guardian_session_processing_steps": "Processing steps",
   "guardian_session_target_sound_path": "Target sound path",
-  "guardian_session_heard_sound_path": "Detected sound path"
+  "guardian_session_heard_sound_path": "Detected sound path",
+  "guardian_session_yes": "Yes",
+  "guardian_session_no": "No"
 }

@@ -4,7 +4,19 @@ import assert from "node:assert/strict";
 import {
   buildSessionTabs,
   isSessionActionCurrent,
+  summarizeSessionQuality,
 } from "./speechSessionPresentation.utils.js";
+
+test("a closed session has an empty quality summary instead of crashing", () => {
+  assert.deepEqual(summarizeSessionQuality(null), {
+    total: 0,
+    good: 0,
+    fair: 0,
+    poor: 0,
+    unusable: 0,
+    status: "unavailable",
+  });
+});
 
 test("normal guardians never receive the technical detail tab", () => {
   const tabs = buildSessionTabs({ session: {}, isSuperAdmin: false });
