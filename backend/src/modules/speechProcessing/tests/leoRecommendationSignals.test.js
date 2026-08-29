@@ -52,7 +52,7 @@ test("pseudoword similarity uses persisted word-reading evidence before pronunci
   assert.equal(signals.evidenceSources.pseudoword, "word_reading_similarity_score");
 });
 
-test("pseudoword similarity falls back to pronunciation only after word-reading evidence is absent", () => {
+test("pseudoword similarity ignores diagnostic pronunciation and uses the named placeholder fallback", () => {
   const signals = getRecommendationSignals([
     {
       taskType: "pseudoword_read",
@@ -66,10 +66,30 @@ test("pseudoword similarity falls back to pronunciation only after word-reading 
     },
   ]);
 
-  assert.equal(signals.pseudowordSimilarity, 0.5);
+  assert.equal(signals.pseudowordSimilarity, 0.99);
   assert.equal(signals.pronunciationScore, 0.5);
-  assert.equal(signals.evidenceSources.pseudoword, "pronunciation_model_score");
-  assert.equal(signals.evidenceSources.pronunciation, "pronunciation_model_score");
+  assert.equal(signals.evidenceSources.pseudoword, "placeholder_pronunciation_score");
+  assert.equal(
+    signals.evidenceSources.pronunciation,
+    "diagnostic_only_pronunciation_model_score"
+  );
+});
+
+test("pseudoword similarity is unavailable when only an unverified pronunciation score exists", () => {
+  const signals = getRecommendationSignals([
+    {
+      taskType: "pseudoword_read",
+      pronunciationModel: { predictedPronunciationScore: 0.1 },
+    },
+  ]);
+
+  assert.equal(signals.pseudowordSimilarity, undefined);
+  assert.equal(signals.evidenceSources.pseudoword, "unavailable");
+  assert.equal(signals.pronunciationScore, 0.1);
+  assert.equal(
+    signals.evidenceSources.pronunciation,
+    "diagnostic_only_pronunciation_model_score"
+  );
 });
 
 test("unavailable evidence remains unavailable instead of becoming zero", () => {
@@ -168,6 +188,21 @@ test("pseudoword routing keeps observed similarity ahead of low placeholder scor
         taskType: "pseudoword_read",
         wordReading: { similarityScore: 0.9 },
         features: { pronunciationScorePlaceholder: 0.1 },
+      },
+    ],
+  });
+
+  assert.equal(plan.reasonCode, "sequence_next");
+  assert.equal(plan.nextActivityId, "leo_first_sound_hunt");
+});
+
+test("pseudoword routing never uses an unverified pronunciation score against the similarity threshold", () => {
+  const plan = getActivityPlan({
+    speech: { supportLevel: "unknown" },
+    recentAttempts: [
+      {
+        taskType: "pseudoword_read",
+        pronunciationModel: { predictedPronunciationScore: 0.1 },
       },
     ],
   });

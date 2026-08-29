@@ -65,10 +65,6 @@ const getRecommendationSignals = (attempts = []) => {
       getValue: (attempt) => attempt.wordReading?.similarityScore,
     },
     {
-      name: "pronunciation_model_score",
-      getValue: (attempt) => attempt.pronunciationModel?.predictedPronunciationScore,
-    },
-    {
       name: "placeholder_pronunciation_score",
       getValue: (attempt) => attempt.features?.pronunciationScorePlaceholder,
     },
@@ -85,7 +81,7 @@ const getRecommendationSignals = (attempts = []) => {
   ]);
   const pronunciation = getMeanMetric(trainingAttempts, [
     {
-      name: "pronunciation_model_score",
+      name: "diagnostic_only_pronunciation_model_score",
       getValue: (attempt) => attempt.pronunciationModel?.predictedPronunciationScore,
     },
     {
