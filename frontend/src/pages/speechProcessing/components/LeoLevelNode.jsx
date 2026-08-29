@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 const stateStyles = {
   completed: "scale-100 bg-gradient-to-br from-amber-300 to-orange-500 text-white shadow-amber-950/25",
   current: "scale-105 bg-gradient-to-br from-emerald-300 to-teal-600 text-white shadow-emerald-950/30 animate-pulse",
@@ -14,9 +16,14 @@ const adventureColors = [
 ];
 
 function LeoLevelNode({ index, prompt, state, stars = 0, onClick, theme, compact = false, variant = "default" }) {
+  const { t } = useTranslation("sp");
   const locked = state === "locked";
-  const label = prompt?.targetText || `Level ${index + 1}`;
-  const starText = state === "completed" ? "*".repeat(Math.max(1, Math.min(3, stars || 1))) : locked ? "Locked" : "Star";
+  const label = prompt?.targetText || t("level_number", { number: index + 1 });
+  const starText = state === "completed"
+    ? "*".repeat(Math.max(1, Math.min(3, stars || 1)))
+    : locked
+      ? t("locked_label")
+      : t("star_label");
 
   if (variant === "adventure") {
     const color = adventureColors[index % adventureColors.length];
@@ -38,12 +45,12 @@ function LeoLevelNode({ index, prompt, state, stars = 0, onClick, theme, compact
         className={`group relative flex min-h-[104px] w-full max-w-[108px] flex-col items-center justify-start rounded-[1.7rem] p-1 transition focus:outline-none focus:ring-4 focus:ring-amber-100 ${
           locked ? "cursor-not-allowed opacity-75" : "hover:-translate-y-1"
         }`}
-        aria-label={`Level ${index + 1}: ${label}`}
+        aria-label={t("level_aria_label", { number: index + 1, label })}
       >
         <span className="absolute top-[50px] h-8 w-24 rounded-[999px] bg-stone-800/40 blur-sm" />
         {state === "invalid_retry" && (
           <span className="absolute -top-2 z-30 rounded-full border-2 border-amber-50 bg-orange-500 px-2 py-1 text-[10px] font-black text-white shadow-lg">
-            Retry
+            {t("try_again_label")}
           </span>
         )}
         {state === "current" && (
@@ -71,7 +78,7 @@ function LeoLevelNode({ index, prompt, state, stars = 0, onClick, theme, compact
                 : "bg-emerald-950/80 text-amber-100"
           }`}
         >
-          {state === "completed" ? starText : locked ? "Locked" : "Ready"}
+          {state === "completed" ? starText : locked ? t("locked_label") : t("ready_label")}
         </span>
       </button>
     );
@@ -85,11 +92,11 @@ function LeoLevelNode({ index, prompt, state, stars = 0, onClick, theme, compact
       className={`group relative flex flex-col items-center justify-start rounded-[1.6rem] p-2 transition focus:outline-none focus:ring-4 focus:ring-amber-200 ${
         compact ? "min-h-[86px]" : "min-h-[112px]"
       } ${locked ? "cursor-not-allowed" : "hover:-translate-y-1"}`}
-      aria-label={`Level ${index + 1}: ${label}`}
+      aria-label={t("level_aria_label", { number: index + 1, label })}
     >
       {state === "invalid_retry" && (
         <span className="absolute -top-2 z-20 rounded-full bg-orange-100 px-2 py-1 text-[10px] font-black text-orange-800 ring-1 ring-orange-200">
-          Retry
+          {t("try_again_label")}
         </span>
       )}
       <span

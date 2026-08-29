@@ -20,6 +20,13 @@ export const getAutoSubmitDelay = ({ recording, submitting = false, feedback = n
 export const canSubmitLeoPrompt = ({ prompt, submitting = false, feedback = null } = {}) =>
   Boolean(prompt) && !submitting && !feedback;
 
+export const canUsePromptPlayback = ({
+  allowPromptPlayback = false,
+  isRecording = false,
+  submitting = false,
+  feedback = null,
+} = {}) => Boolean(allowPromptPlayback) && !isRecording && !submitting && !feedback;
+
 export const getLeoPromptPrimaryAction = ({
   feedback = null,
   submitting = false,
@@ -36,6 +43,7 @@ export const createSubmissionFailureFeedback = ({
   promptId = "",
   childFeedback = "",
   leoMessage = "",
+  retryAction = "recording",
 } = {}) => ({
   promptId,
   childFeedback,
@@ -43,10 +51,33 @@ export const createSubmissionFailureFeedback = ({
   levelCompleted: false,
   nextPromptUnlocked: false,
   retryRequired: true,
+  retryAction: retryAction === "selection" ? "selection" : "recording",
   submissionFailed: true,
   starsEarned: 0,
   levelState: "submission_failed",
 });
+
+export const getSubmissionFailurePresentation = ({ taskType = "" } = {}) => {
+  const selectionTask = taskType === "first_sound" || taskType === "minimal_pair";
+  return selectionTask
+    ? {
+        childFeedbackKey: "selection_check_failed",
+        leoMessageKey: "selection_check_failed_hint",
+        retryAction: "selection",
+      }
+    : {
+        childFeedbackKey: "recording_check_failed",
+        leoMessageKey: "recording_check_failed_hint",
+        retryAction: "recording",
+      };
+};
+
+export const getSubmissionRetryLabelKey = ({ feedback = null, longReadingPrompt = false } = {}) => {
+  if (feedback?.submissionFailed) {
+    return feedback.retryAction === "selection" ? "selection_try_again" : "recorder_again";
+  }
+  return longReadingPrompt ? "sentence_retry_button" : "try_this_level_again";
+};
 
 export const resolveGuardianChildId = (children = [], storedId = "") => {
   if (!children.length) return "";

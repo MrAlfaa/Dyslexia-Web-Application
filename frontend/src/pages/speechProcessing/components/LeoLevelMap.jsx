@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import LeoLevelNode from "./LeoLevelNode";
 import LeoRewardChest from "./LeoRewardChest";
 
@@ -15,11 +16,15 @@ function LeoLevelMap({
   levelStars = {},
   invalidPromptIds = [],
   theme,
+  guideMessage,
+  collectibleLabel,
+  rewardLabel,
   onNodeClick,
   compact = false,
   variant = "default",
   className = "",
 }) {
+  const { t } = useTranslation("sp");
   const completed = prompts.length > 0 && completedPromptIds.length >= prompts.length;
   const totalStars = Object.values(levelStars).reduce((sum, value) => sum + (Number(value) || 0), 0);
   const adventure = variant === "adventure";
@@ -35,14 +40,19 @@ function LeoLevelMap({
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
           <div className="rounded-[1.3rem] border-4 border-amber-100 bg-amber-50 px-4 py-2 text-amber-950 shadow-lg shadow-emerald-950/20">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
-              Jungle Level Path
+              {t("jungle_level_path")}
             </p>
             <h2 className="text-lg font-black sm:text-2xl">
-              Help Leo collect every sound gem
+              {t("collect_every_activity_item", {
+                item: collectibleLabel || t("sound_gems"),
+              })}
             </h2>
           </div>
           <span className="rounded-[1.3rem] border-4 border-amber-100 bg-amber-50 px-4 py-2 text-sm font-black text-emerald-950 shadow-lg shadow-emerald-950/20">
-            {completedPromptIds.length}/{prompts.length} levels
+            {t("start_overlay_level_progress", {
+              completed: completedPromptIds.length,
+              total: prompts.length,
+            })}
           </span>
         </div>
 
@@ -80,6 +90,7 @@ function LeoLevelMap({
             <LeoRewardChest
               unlocked={completed}
               theme={theme}
+              rewardLabel={rewardLabel}
               totalStars={totalStars}
               compact={false}
               variant="adventure"
@@ -101,14 +112,17 @@ function LeoLevelMap({
         <div className={`${compact ? "mb-3" : "mb-4"} flex flex-wrap items-center justify-between gap-3`}>
           <div>
             <p className={`${compact ? "text-[10px]" : "text-xs"} font-black uppercase tracking-[0.2em] text-emerald-50`}>
-              Jungle Level Path
+              {t("jungle_level_path")}
             </p>
             <h2 className={`${compact ? "text-lg" : "text-2xl"} font-black text-white drop-shadow`}>
-              {theme?.animalMessage || "Follow Leo's path!"}
+              {guideMessage || t("follow_sound_path")}
             </h2>
           </div>
           <span className="rounded-full bg-white/90 px-4 py-2 text-sm font-black text-emerald-900 shadow-sm">
-            {completedPromptIds.length}/{prompts.length} levels
+            {t("start_overlay_level_progress", {
+              completed: completedPromptIds.length,
+              total: prompts.length,
+            })}
           </span>
         </div>
 
@@ -142,7 +156,13 @@ function LeoLevelMap({
                 />
               );
             })}
-            <LeoRewardChest unlocked={completed} theme={theme} totalStars={totalStars} compact={compact} />
+            <LeoRewardChest
+              unlocked={completed}
+              theme={theme}
+              rewardLabel={rewardLabel}
+              totalStars={totalStars}
+              compact={compact}
+            />
           </div>
         </div>
       </div>

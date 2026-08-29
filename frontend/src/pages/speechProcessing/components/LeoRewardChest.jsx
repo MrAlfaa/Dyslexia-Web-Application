@@ -1,4 +1,15 @@
-function LeoRewardChest({ unlocked, theme, totalStars = 0, compact = false, variant = "default" }) {
+import { useTranslation } from "react-i18next";
+
+function LeoRewardChest({
+  unlocked,
+  rewardLabel,
+  totalStars = 0,
+  compact = false,
+  variant = "default",
+}) {
+  const { t } = useTranslation("sp");
+  const resolvedRewardLabel = rewardLabel || t("jungle_sound_badge");
+
   if (variant === "adventure") {
     return (
       <div
@@ -9,17 +20,17 @@ function LeoRewardChest({ unlocked, theme, totalStars = 0, compact = false, vari
         }`}
       >
         <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full border-2 border-amber-100 bg-rose-600 px-3 py-1 text-[11px] font-black text-white shadow-lg">
-          Final Reward
+          {t("final_reward")}
         </div>
         <div className="p-4 pt-6">
           <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-[1.2rem] border-4 border-amber-100 bg-gradient-to-br from-yellow-300 to-orange-500 text-2xl font-black shadow-inner shadow-white/30 ${unlocked ? "animate-bounce" : ""}`}>
-            {unlocked ? "OK" : "GO"}
+            {unlocked ? t("reward_open_short") : t("reward_go_short")}
           </div>
           <h3 className="mt-3 text-base font-black leading-5">
-            {theme?.rewardName || "Jungle Sound Badge"}
+            {resolvedRewardLabel}
           </h3>
           <p className="mt-1 text-xs font-black text-amber-800">
-            {unlocked ? `${totalStars} stars collected` : "Finish every level"}
+            {unlocked ? t("stars_collected", { count: totalStars }) : t("finish_every_level")}
           </p>
         </div>
       </div>
@@ -37,16 +48,16 @@ function LeoRewardChest({ unlocked, theme, totalStars = 0, compact = false, vari
       }`}
     >
       <span className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-rose-500 px-3 py-1 text-xs font-black text-white shadow-lg">
-        Final Reward
+        {t("final_reward")}
       </span>
       <div className={`${compact ? "mt-3 text-3xl" : "mt-4 text-5xl"} ${unlocked ? "animate-bounce" : ""}`}>
-        {unlocked ? "Trophy" : "Gift"}
+        {unlocked ? t("trophy_label") : t("gift_label")}
       </div>
       <h3 className={`${compact ? "mt-1 text-sm" : "mt-2 text-lg"} font-black`}>
-        {theme?.rewardName || "Jungle Sound Badge"}
+        {resolvedRewardLabel}
       </h3>
       <p className="mt-1 text-xs font-black">
-        {unlocked ? `${totalStars} stars collected` : "Finish every level"}
+        {unlocked ? t("stars_collected", { count: totalStars }) : t("finish_every_level")}
       </p>
     </div>
   );
