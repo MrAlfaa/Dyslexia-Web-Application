@@ -106,6 +106,7 @@ const getActivityPlan = ({ speech = {}, recentAttempts = [] } = {}) => {
   const signals = getRecommendationSignals(recentAttempts);
   const override = getReasonOverride(signals);
   let reasonCode = "sequence_next";
+  let reviewActivityId = "";
   let nextActivityId = chooseFromSequence({
     sequence,
     completedSet,
@@ -116,17 +117,24 @@ const getActivityPlan = ({ speech = {}, recentAttempts = [] } = {}) => {
     reasonCode = override.reasonCode;
     nextActivityId = override.activityId;
   } else if (override && completedSet.has(override.activityId) && signals.retryRate > 0.25) {
-    reasonCode = "repeat_activity";
-    nextActivityId = override.activityId;
+    reviewActivityId = override.activityId;
   }
 
   const recommendedActivityIds = Array.from(
-    new Set([nextActivityId, ...sequence, ...(speech.recommendedActivityIds || [])])
+    new Set([
+      nextActivityId,
+      reviewActivityId,
+      ...sequence,
+      ...(speech.recommendedActivityIds || []),
+    ])
   ).filter(Boolean);
 
   return {
     nextActivityId,
     nextActivity: getActivityById(nextActivityId),
+    reviewActivityId,
+    reviewActivity: getActivityById(reviewActivityId),
+    reviewReasonCode: reviewActivityId ? "repeat_activity" : "",
     recommendedActivityIds,
     recommendedActivities: recommendedActivityIds.map(getActivityById).filter(Boolean),
     reasonCode,

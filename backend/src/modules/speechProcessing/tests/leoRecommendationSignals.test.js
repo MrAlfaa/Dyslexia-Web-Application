@@ -4,7 +4,10 @@ const assert = require("node:assert/strict");
 const {
   getRecommendationSignals,
 } = require("../services/leoRecommendationSignals.service");
-const { getActivityPlan } = require("../services/leoActivityRecommendation.service");
+const {
+  buildActivityMap,
+  getActivityPlan,
+} = require("../services/leoActivityRecommendation.service");
 
 test("selection accuracy uses observed selectedCorrect instead of placeholder pronunciation", () => {
   const signals = getRecommendationSignals([
@@ -209,4 +212,44 @@ test("pseudoword routing never uses an unverified pronunciation score against th
 
   assert.equal(plan.reasonCode, "sequence_next");
   assert.equal(plan.nextActivityId, "leo_first_sound_hunt");
+});
+
+test("a completed replay recommendation never blocks the next uncompleted activity", () => {
+  const speech = {
+    supportLevel: "high_support",
+    currentActivityId: "leo_robot_words",
+    completedActivityIds: [
+      "leo_first_sound_hunt",
+      "leo_echo_roar",
+      "leo_robot_words",
+    ],
+  };
+  const plan = getActivityPlan({
+    speech,
+    recentAttempts: [
+      {
+        taskType: "pseudoword_read",
+        attemptNo: 2,
+        wordReading: { similarityScore: 0.4 },
+      },
+      {
+        taskType: "pseudoword_read",
+        attemptNo: 3,
+        wordReading: { similarityScore: 0.4 },
+      },
+    ],
+  });
+  const activityMap = buildActivityMap({ speech, plan });
+
+  assert.equal(plan.nextActivityId, "leo_sound_twins");
+  assert.equal(plan.reasonCode, "sequence_next");
+  assert.equal(plan.reviewActivityId, "leo_robot_words");
+  assert.equal(
+    activityMap.find((activity) => activity.activityId === "leo_sound_twins")?.state,
+    "current"
+  );
+  assert.equal(
+    activityMap.find((activity) => activity.activityId === "leo_robot_words")?.state,
+    "completed"
+  );
 });
