@@ -12,25 +12,38 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.ensemble import (
+    ExtraTreesClassifier,
+    GradientBoostingClassifier,
+    HistGradientBoostingClassifier,
+    RandomForestClassifier,
+)
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
     classification_report,
     confusion_matrix,
     f1_score,
+    log_loss,
 )
-from sklearn.model_selection import GroupShuffleSplit
-from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import GroupKFold, GroupShuffleSplit
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.svm import SVC
+from sklearn.utils.class_weight import compute_sample_weight
 
 
 LABEL_COLUMN = "speech_support_label"
 PARTICIPANT_COLUMN = "participant_code"
 SESSION_ID_COLUMN = "session_id"
 OUTPUT_DIR = Path("final_speech_support_model_artifacts")
+CANDIDATE_OUTPUT_DIR = Path("final_speech_support_candidate_artifacts")
 ARTIFACT_VERSION = "final_speech_support_v1"
 VALID_LABELS = {"low_support", "medium_support", "high_support"}
 MIN_LABELLED_ROWS = 30
+MIN_CLASS_RECALL = 0.40
+MAX_EXPECTED_CALIBRATION_ERROR = 0.15
 REQUIRED_COLUMNS = {SESSION_ID_COLUMN, PARTICIPANT_COLUMN, LABEL_COLUMN}
 APPROVED_TRAINING_INPUT_COLUMNS = {
     "activity_id",
@@ -236,33 +249,103 @@ def build_feature_table(data):
     return validated[numeric_columns].fillna(0), numeric_columns
 
 
-def train_and_select_model(x_train, y_train, x_test, y_test):
+def expected_calibration_error(y_true, probabilities, bins=10):
+    """Compute top-label ECE for a compact multiclass calibration check."""
+    probabilities = np.asarray(probabilities)
+    confidence = probabilities.max(axis=1)
+    predictions = probabilities.argmax(axis=1)
+    correctness = (predictions == np.asarray(y_true)).astype(float)
+    edges = np.linspace(0, 1, bins + 1)
+    ece = 0.0
+    for lower, upper in zip(edges[:-1], edges[1:]):
+        selected = (confidence > lower) & (confidence <= upper)
+        if selected.any():
+            ece += selected.mean() * abs(correctness[selected].mean() - confidence[selected].mean())
+    return float(ece)
+
+
+def train_and_select_model(x_train, y_train, x_test, y_test, groups_train=None):
+    sample_weight = compute_sample_weight(class_weight="balanced", y=y_train)
+    groups_train = np.asarray(groups_train) if groups_train is not None else np.arange(len(y_train))
+    unique_groups = np.unique(groups_train)
+    if len(unique_groups) < 2:
+        raise ValueError("Calibrated candidate training requires at least two training participant groups.")
+    calibration_splits = list(
+        GroupKFold(n_splits=min(3, len(unique_groups))).split(x_train, y_train, groups_train)
+    )
+    for fold_no, (fit_indices, calibration_indices) in enumerate(calibration_splits, start=1):
+        if len(np.unique(y_train[fit_indices])) != len(np.unique(y_train)):
+            raise ValueError(f"Calibration fold {fold_no} training partition is missing a support class.")
+        if len(np.unique(y_train[calibration_indices])) != len(np.unique(y_train)):
+            raise ValueError(f"Calibration fold {fold_no} validation partition is missing a support class.")
+    calibrated_svm = CalibratedClassifierCV(
+        estimator=make_pipeline(
+            StandardScaler(),
+            SVC(C=2.0, kernel="rbf", class_weight="balanced"),
+        ),
+        method="sigmoid",
+        cv=calibration_splits,
+    )
     candidates = {
-        "random_forest": RandomForestClassifier(
+        "random_forest_baseline": RandomForestClassifier(
             n_estimators=300,
             random_state=42,
             class_weight="balanced",
-            max_depth=None,
+        ),
+        "tuned_random_forest": RandomForestClassifier(
+            n_estimators=500,
+            random_state=42,
+            class_weight="balanced",
+            min_samples_leaf=2,
+            max_features="sqrt",
+        ),
+        "extra_trees": ExtraTreesClassifier(
+            n_estimators=500,
+            random_state=42,
+            class_weight="balanced",
+            min_samples_leaf=2,
+            max_features="sqrt",
+        ),
+        "hist_gradient_boosting": HistGradientBoostingClassifier(
+            learning_rate=0.06,
+            max_iter=300,
+            max_leaf_nodes=15,
+            l2_regularization=0.2,
+            random_state=42,
         ),
         "gradient_boosting": GradientBoostingClassifier(random_state=42),
+        "calibrated_svm": calibrated_svm,
     }
 
     results = {}
     for name, model in candidates.items():
-        model.fit(x_train, y_train)
+        if name in {"random_forest_baseline", "tuned_random_forest", "extra_trees", "hist_gradient_boosting", "gradient_boosting"}:
+            model.fit(x_train, y_train, sample_weight=sample_weight)
+        else:
+            model.fit(x_train, y_train)
         predictions = model.predict(x_test)
+        probabilities = model.predict_proba(x_test)
+        report = classification_report(
+            y_test,
+            predictions,
+            output_dict=True,
+            zero_division=0,
+        )
+        class_recalls = [
+            values["recall"]
+            for key, values in report.items()
+            if key.isdigit() and isinstance(values, dict)
+        ]
         results[name] = {
             "model": model,
             "accuracy": accuracy_score(y_test, predictions),
             "balanced_accuracy": balanced_accuracy_score(y_test, predictions),
             "macro_f1": f1_score(y_test, predictions, average="macro", zero_division=0),
-            "classification_report": classification_report(
-                y_test,
-                predictions,
-                output_dict=True,
-                zero_division=0,
-            ),
+            "classification_report": report,
             "confusion_matrix": confusion_matrix(y_test, predictions).tolist(),
+            "log_loss": log_loss(y_test, probabilities, labels=np.arange(probabilities.shape[1])),
+            "calibration_error": expected_calibration_error(y_test, probabilities),
+            "minimum_class_recall": min(class_recalls) if class_recalls else 0.0,
             "predictions": predictions,
         }
 
@@ -271,6 +354,7 @@ def train_and_select_model(x_train, y_train, x_test, y_test):
         key=lambda item: (
             results[item]["macro_f1"],
             results[item]["balanced_accuracy"],
+            -results[item]["calibration_error"],
             results[item]["accuracy"],
         ),
     )
@@ -296,7 +380,13 @@ def main():
     y_train = encoder.transform(train_data[LABEL_COLUMN])
     y_test = encoder.transform(test_data[LABEL_COLUMN])
 
-    best_name, best_result, all_results = train_and_select_model(x_train, y_train, x_test, y_test)
+    best_name, best_result, all_results = train_and_select_model(
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        groups_train=train_data[PARTICIPANT_COLUMN].to_numpy(),
+    )
     best_model = best_result["model"]
     predictions = best_result["predictions"]
 
@@ -311,10 +401,25 @@ def main():
     )
     matrix = confusion_matrix(y_test, predictions, labels=np.arange(len(labels))).tolist()
 
-    OUTPUT_DIR.mkdir(exist_ok=True)
-    joblib.dump(best_model, OUTPUT_DIR / "final_speech_support_classifier.joblib")
-    joblib.dump(encoder, OUTPUT_DIR / "final_speech_label_encoder.joblib")
-    (OUTPUT_DIR / "final_speech_feature_columns.json").write_text(
+    baseline_result = all_results["random_forest_baseline"]
+    deployment_gate = {
+        "speaker_disjoint_split": True,
+        "macro_f1_above_same_split_baseline": bool(
+            best_result["macro_f1"] >= baseline_result["macro_f1"] + 0.01
+        ),
+        "minimum_class_recall_passed": bool(best_result["minimum_class_recall"] >= MIN_CLASS_RECALL),
+        "calibration_improved_and_acceptable": bool(
+            best_result["calibration_error"] <= baseline_result["calibration_error"]
+            and best_result["calibration_error"] <= MAX_EXPECTED_CALIBRATION_ERROR
+        ),
+    }
+    deployment_gate["passed"] = all(deployment_gate.values())
+
+    artifact_output_dir = OUTPUT_DIR if deployment_gate["passed"] else CANDIDATE_OUTPUT_DIR
+    artifact_output_dir.mkdir(exist_ok=True)
+    joblib.dump(best_model, artifact_output_dir / "final_speech_support_classifier.joblib")
+    joblib.dump(encoder, artifact_output_dir / "final_speech_label_encoder.joblib")
+    (artifact_output_dir / "final_speech_feature_columns.json").write_text(
       json.dumps(feature_columns, indent=2),
       encoding="utf-8",
     )
@@ -328,11 +433,26 @@ def main():
         "accuracy": float(best_result["accuracy"]),
         "balanced_accuracy": float(best_result["balanced_accuracy"]),
         "macro_f1": float(best_result["macro_f1"]),
+        "minimum_class_recall": float(best_result["minimum_class_recall"]),
+        "log_loss": float(best_result["log_loss"]),
+        "expected_calibration_error": float(best_result["calibration_error"]),
+        "participant_disjoint_split_verified": True,
+        "deployment_gate": deployment_gate,
+        "same_split_baseline": {
+            "macro_f1": float(baseline_result["macro_f1"]),
+            "balanced_accuracy": float(baseline_result["balanced_accuracy"]),
+            "minimum_class_recall": float(baseline_result["minimum_class_recall"]),
+            "expected_calibration_error": float(baseline_result["calibration_error"]),
+        },
+        "provisional_current_artifact_note": "The reported 0.5903 macro F1 used different proxy labels and is not a valid deployment comparator for local expert-labelled data.",
         "candidate_metrics": {
             name: {
                 "accuracy": float(result["accuracy"]),
                 "balanced_accuracy": float(result["balanced_accuracy"]),
                 "macro_f1": float(result["macro_f1"]),
+                "minimum_class_recall": float(result["minimum_class_recall"]),
+                "log_loss": float(result["log_loss"]),
+                "expected_calibration_error": float(result["calibration_error"]),
             }
             for name, result in all_results.items()
         },
@@ -342,7 +462,7 @@ def main():
         "feature_importance": get_feature_importance(best_model, feature_columns),
         "note": "Speech component support classifier; not a standalone clinical diagnosis model.",
     }
-    (OUTPUT_DIR / "final_speech_training_summary.json").write_text(
+    (artifact_output_dir / "final_speech_training_summary.json").write_text(
         json.dumps(summary, indent=2),
         encoding="utf-8",
     )
@@ -353,8 +473,9 @@ def main():
         "accuracy": summary["accuracy"],
         "balanced_accuracy": summary["balanced_accuracy"],
         "macro_f1": summary["macro_f1"],
+        "deployment_gate_passed": deployment_gate["passed"],
         "rows_used": summary["rows_used"],
-        "output_dir": str(OUTPUT_DIR),
+        "output_dir": str(artifact_output_dir),
     }, indent=2))
 
 

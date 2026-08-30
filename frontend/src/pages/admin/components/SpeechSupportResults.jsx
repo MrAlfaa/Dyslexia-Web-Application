@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Download, Eye, SlidersHorizontal, Volume2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import GuardianCard from "../../../components/guardian/ui/GuardianCard";
+import GuardianPageHeader from "../../../components/guardian/ui/GuardianPageHeader";
+import GuardianRequestState from "../../../components/guardian/ui/GuardianRequestState";
+import GuardianStatCard from "../../../components/guardian/ui/GuardianStatCard";
+import GuardianStatusBadge from "../../../components/guardian/ui/GuardianStatusBadge";
+import { useGuardianChild } from "../../../contexts/GuardianChildContext";
 import {
   exportSpeechAttemptsCsv,
   exportSpeechManualLabelsCsv,
@@ -8,15 +16,9 @@ import {
   getSpeechSessionDetail,
 } from "../../../services/admin/api";
 import { downloadBlob, Field, GRADES, inputClass, ModalShell } from "./speech/shared";
+import { formatSpeechLabel } from "./speech/speechGuardianUtils";
 
 const API_ORIGIN = "http://localhost:5000";
-
-const supportLabelMap = {
-  low_support: "Low support need",
-  medium_support: "Medium support need",
-  high_support: "High support need",
-  unknown: "Unknown",
-};
 
 const initialFilters = {
   grade: "",
@@ -25,7 +27,15 @@ const initialFilters = {
   status: "",
 };
 
-const SessionDetailModal = ({ sessionId, onClose }) => {
+const toAudioUrl = (value) => {
+  if (!value) return "";
+  return /^https?:\/\//i.test(value) ? value : `${API_ORIGIN}${value}`;
+};
+
+const getActivityLabel = (record) =>
+  formatSpeechLabel(record.activityId, record.mode ? formatSpeechLabel(record.mode) : "Speech session");
+
+const SessionDetailModal = ({ sessionId, isSuperAdmin, onClose }) => {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,62 +50,82 @@ const SessionDetailModal = ({ sessionId, onClose }) => {
         setLoading(false);
       }
     };
-    loadDetail();
+    void loadDetail();
   }, [sessionId]);
 
   return (
     <ModalShell
-      title="Speech Session Detail"
-      subtitle="Attempts, audio playback, placeholder features, and manual labels."
+      title="Speech session review"
+      subtitle="Listen to the recordings and review the child-friendly speech-reading evidence."
       onClose={onClose}
-      maxWidth="max-w-6xl"
+      maxWidth="max-w-5xl"
     >
-      <div className="p-7">
+      <div className="p-5">
         {loading ? (
-          <p className="font-bold text-slate-500">Loading session detail...</p>
+          <p className="py-10 text-center text-sm font-semibold text-slate-500">Loading session...</p>
         ) : (
-          <div className="space-y-5">
-            {(detail?.attempts || []).map((attempt) => (
-              <article key={attempt._id} className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-100">
-                <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-3">
+            {(detail?.attempts || []).map((attempt, index) => (
+              <article key={attempt._id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.75fr)]">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-700">
-                      {attempt.promptId} | {attempt.taskType}
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700">
+                      Attempt {index + 1} · {formatSpeechLabel(attempt.taskType, "Speech task")}
                     </p>
-                    <h4 className="mt-2 text-3xl font-black text-slate-950">{attempt.targetText}</h4>
-                    <p className="mt-2 text-sm font-bold text-slate-600">
-                      Valid audio: {attempt.validAudio ? "Yes" : "No"} | Score: {Math.round((attempt.itemResult?.pronunciationScore || 0) * 100)}%
-                    </p>
+                    <h4 className="mt-1.5 text-base font-bold leading-6 text-slate-950">
+                      {attempt.targetText || "Speech prompt"}
+                    </h4>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <GuardianStatusBadge value={attempt.validAudio ? "completed" : "needs_review"} />
+                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                        {formatSpeechLabel(attempt.audioQuality?.qualityLabel, attempt.validAudio ? "Usable audio" : "Unusable audio")}
+                      </span>
+                    </div>
                     {attempt.audioUrl && (
-                      <audio className="mt-4 w-full" src={`${API_ORIGIN}${attempt.audioUrl}`} controls />
+                      <div className="mt-4">
+                        <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-600">
+                          <Volume2 className="h-4 w-4 text-teal-700" /> Recording
+                        </div>
+                        <audio className="w-full" src={toAudioUrl(attempt.audioUrl)} controls preload="none" />
+                      </div>
                     )}
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
-                      <p className="text-xs font-black uppercase text-slate-400">Manual Label</p>
-                      <p className="mt-2 text-sm font-black text-slate-800">{attempt.manualLabelStatus}</p>
+                  <dl className="grid content-start gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg bg-white p-3 ring-1 ring-slate-200">
+                      <dt className="text-[10px] font-semibold uppercase text-slate-400">Learning result</dt>
+                      <dd className="mt-1 text-[13px] font-semibold text-slate-800">
+                        {attempt.childFeedback || attempt.itemResult?.childFeedback || "Recorded for review"}
+                      </dd>
                     </div>
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
-                      <p className="text-xs font-black uppercase text-slate-400">Error Type</p>
-                      <p className="mt-2 text-sm font-black text-slate-800">{attempt.manualLabel?.errorType || "—"}</p>
+                    <div className="rounded-lg bg-white p-3 ring-1 ring-slate-200">
+                      <dt className="text-[10px] font-semibold uppercase text-slate-400">Stars</dt>
+                      <dd className="mt-1 text-[13px] font-semibold text-slate-800">
+                        {attempt.starsEarned ?? attempt.itemResult?.starsEarned ?? "-"}
+                      </dd>
                     </div>
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100 sm:col-span-2">
-                      <p className="text-xs font-black uppercase text-slate-400">Teacher Transcript</p>
-                      <p className="mt-2 text-sm font-black text-slate-800">{attempt.manualLabel?.teacherTranscript || "—"}</p>
-                    </div>
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100 sm:col-span-2">
-                      <p className="text-xs font-black uppercase text-slate-400">Placeholder Features</p>
-                      <p className="mt-2 break-words text-xs font-bold text-slate-600">
-                        {JSON.stringify(attempt.features || {})}
-                      </p>
-                    </div>
-                  </div>
+                    {isSuperAdmin && (
+                      <>
+                        <div className="rounded-lg bg-white p-3 ring-1 ring-slate-200">
+                          <dt className="text-[10px] font-semibold uppercase text-slate-400">Manual label</dt>
+                          <dd className="mt-1 text-[13px] font-semibold text-slate-800">
+                            {attempt.manualLabel?.speechSupportLabel || "Not labelled"}
+                          </dd>
+                        </div>
+                        <div className="rounded-lg bg-white p-3 ring-1 ring-slate-200">
+                          <dt className="text-[10px] font-semibold uppercase text-slate-400">Error type</dt>
+                          <dd className="mt-1 text-[13px] font-semibold text-slate-800">
+                            {attempt.manualLabel?.errorType || "-"}
+                          </dd>
+                        </div>
+                      </>
+                    )}
+                  </dl>
                 </div>
               </article>
             ))}
             {!detail?.attempts?.length && (
-              <p className="rounded-2xl bg-slate-50 p-8 text-center font-bold text-slate-500">
-                No attempts recorded for this session.
+              <p className="rounded-lg bg-slate-50 p-8 text-center text-sm font-medium text-slate-500">
+                No attempts were recorded for this session.
               </p>
             )}
           </div>
@@ -106,29 +136,61 @@ const SessionDetailModal = ({ sessionId, onClose }) => {
 };
 
 const SpeechSupportResults = () => {
+  const navigate = useNavigate();
+  const adminUser = JSON.parse(localStorage.getItem("adminUser") || "{}");
+  const isSuperAdmin = adminUser.role === "super admin";
+  const {
+    selectedChildId,
+    state: childState,
+    error: childError,
+    refreshChildren,
+  } = useGuardianChild();
   const [records, setRecords] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
   const [loading, setLoading] = useState(true);
+  const [requestError, setRequestError] = useState(null);
   const [detailSessionId, setDetailSessionId] = useState("");
 
-  const fetchResults = async () => {
+  const fetchResults = useCallback(async (appliedFilters = initialFilters) => {
+    if (!selectedChildId) return;
     setLoading(true);
+    setRequestError(null);
     try {
-      const response = await getFilteredAdminSpeechResults(filters);
+      const response = await getFilteredAdminSpeechResults({
+        ...appliedFilters,
+        studentId: selectedChildId,
+      });
       setRecords(response.data?.data || []);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load Speech-Reading Support results");
+      setRequestError(error);
+      toast.error(error.response?.data?.message || "Failed to load speech support results");
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedChildId]);
 
   useEffect(() => {
-    fetchResults();
-  }, []);
+    if (childState === "ready") void fetchResults(initialFilters);
+  }, [childState, fetchResults]);
+
+  const summary = useMemo(() => {
+    const completed = records.filter((record) => record.status === "completed").length;
+    const validRecordings = records.reduce(
+      (total, record) => total + Number(record.attemptSummary?.validAttemptCount || 0),
+      0
+    );
+    const totalRecordings = records.reduce(
+      (total, record) => total + Number(record.attemptSummary?.totalAttemptCount || 0),
+      0
+    );
+    const latestResult = records.find(
+      (record) => record.status === "completed" && record.supportLevel && record.supportLevel !== "unknown"
+    );
+    return { completed, validRecordings, totalRecordings, latestResult };
+  }, [records]);
 
   const handleFilterChange = (event) => {
-    setFilters({ ...filters, [event.target.name]: event.target.value });
+    setFilters((current) => ({ ...current, [event.target.name]: event.target.value }));
   };
 
   const handleExport = async (type) => {
@@ -140,121 +202,170 @@ const SpeechSupportResults = () => {
       } else {
         downloadBlob(await exportSpeechManualLabelsCsv(), "speech-manual-labels.csv");
       }
-    } catch (error) {
+    } catch {
       toast.error("CSV export failed");
     }
   };
 
+  const effectiveState = childState !== "ready"
+    ? childState
+    : requestError
+      ? "request_failed"
+      : "ready";
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-teal-700">Speech Processing</p>
-          <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-950">Speech Support Results</h2>
-          <p className="mt-3 max-w-3xl text-base font-bold leading-7 text-slate-500">
-            Internal Guardian Console monitoring for Speech-Reading Support sessions, attempts, labels, and recommendations.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button onClick={() => handleExport("attempts")} className="rounded-2xl bg-sky-50 px-4 py-3 text-xs font-black text-sky-700 ring-1 ring-sky-100">Export Attempts CSV</button>
-          <button onClick={() => handleExport("sessions")} className="rounded-2xl bg-teal-50 px-4 py-3 text-xs font-black text-teal-700 ring-1 ring-teal-100">Export Sessions CSV</button>
-          <button onClick={() => handleExport("labels")} className="rounded-2xl bg-slate-950 px-4 py-3 text-xs font-black text-white">Export Manual Labels CSV</button>
-        </div>
-      </div>
-
-      <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-100">
-        <div className="grid gap-4 md:grid-cols-5">
-          <Field label="Grade">
-            <select className={inputClass} name="grade" value={filters.grade} onChange={handleFilterChange}>
-              <option value="">All</option>
-              {GRADES.map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}
-            </select>
-          </Field>
-          <Field label="Support Level">
-            <select className={inputClass} name="supportLevel" value={filters.supportLevel} onChange={handleFilterChange}>
-              <option value="">All</option>
-              <option value="low_support">Low support need</option>
-              <option value="medium_support">Medium support need</option>
-              <option value="high_support">High support need</option>
-              <option value="unknown">Unknown</option>
-            </select>
-          </Field>
-          <Field label="Mode">
-            <select className={inputClass} name="mode" value={filters.mode} onChange={handleFilterChange}>
-              <option value="">All</option>
-              <option value="demo">demo</option>
-              <option value="assigned">assigned</option>
-              <option value="data_collection">data_collection</option>
-            </select>
-          </Field>
-          <Field label="Status">
-            <select className={inputClass} name="status" value={filters.status} onChange={handleFilterChange}>
-              <option value="">All</option>
-              <option value="in_progress">in_progress</option>
-              <option value="completed">completed</option>
-            </select>
-          </Field>
-          <div className="flex items-end">
-            <button onClick={fetchResults} className="w-full rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white">
-              Apply Filters
+    <div className="space-y-5">
+      <GuardianPageHeader
+        eyebrow="Speech Processing"
+        title="Speech Support Results"
+        subtitle="Review the selected child's speech-reading support indicator, recording evidence, and completed sessions."
+        actions={isSuperAdmin ? (
+          <>
+            <button onClick={() => handleExport("attempts")} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700">
+              <Download className="h-4 w-4" /> Attempts CSV
             </button>
-          </div>
-        </div>
-      </div>
+            <button onClick={() => handleExport("sessions")} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700">
+              <Download className="h-4 w-4" /> Sessions CSV
+            </button>
+            <button onClick={() => handleExport("labels")} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">
+              <Download className="h-4 w-4" /> Labels CSV
+            </button>
+          </>
+        ) : null}
+      />
 
-      <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-slate-100">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-slate-50">
-              <tr>
-                {["Student", "Username", "Grade", "Mode", "Attempts", "Manual Labels", "Support Level", "Score", "Model", "Completed", "Actions"].map((heading) => (
-                  <th key={heading} className="px-5 py-4 text-left text-xs font-black uppercase tracking-[0.18em] text-slate-400">{heading}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr><td colSpan={11} className="p-10 text-center font-bold text-slate-500">Loading results...</td></tr>
-              ) : records.map((record) => {
-                const student = record.studentId || {};
-                return (
-                  <tr key={record._id} className="hover:bg-sky-50/30">
-                    <td className="px-5 py-4 font-black text-slate-950">{student.fullName || "Student"}</td>
-                    <td className="px-5 py-4 text-sm font-bold text-teal-700">{student.username || "—"}</td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-600">{student.grade || record.grade || "—"}</td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-600">{record.mode}</td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-600">
-                      {record.attemptSummary?.validAttemptCount || 0}/{record.attemptSummary?.totalAttemptCount || 0}
-                    </td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-600">{record.manualLabelCount || 0}</td>
-                    <td className="px-5 py-4">
-                      <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-black text-teal-700">
-                        {supportLabelMap[record.supportLevel] || record.supportLevel}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-600">{Math.round((record.supportScore || 0) * 100)}%</td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-600">{record.modelVersion || "placeholder_v1"}</td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-600">
-                      {record.completedAt ? new Date(record.completedAt).toLocaleString() : "In progress"}
-                    </td>
-                    <td className="px-5 py-4">
-                      <button onClick={() => setDetailSessionId(record._id)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700">
-                        View Session Detail
-                      </button>
-                    </td>
+      {effectiveState !== "ready" ? (
+        <GuardianRequestState
+          state={effectiveState}
+          error={requestError || childError}
+          onRetry={childState === "ready" ? () => fetchResults(filters) : refreshChildren}
+          onAddChild={() => navigate("/admin/students")}
+        />
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <GuardianStatCard label="Sessions" value={records.length} helper="Sessions matching the current filters" tone="slate" />
+            <GuardianStatCard label="Completed" value={summary.completed} helper="Completed speech-reading sessions" tone="emerald" />
+            <GuardianStatCard label="Usable recordings" value={`${summary.validRecordings}/${summary.totalRecordings}`} helper="Clear enough for learning review" tone="sky" />
+            <div className="rounded-lg border border-[#DCE5E0] bg-[#FFF9EB] p-4 shadow-[0_4px_14px_rgba(16,36,30,0.045)]">
+              <p className="text-xs font-semibold text-[#5B6475]">Latest support indicator</p>
+              <div className="mt-2">
+                <GuardianStatusBadge value={summary.latestResult?.supportLevel || "unknown"} type="support" />
+              </div>
+              <p className="mt-2 text-xs font-medium text-[#667085]">Pronunciation-support evidence, not a diagnosis</p>
+            </div>
+          </div>
+
+          <GuardianCard>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              <Field label="Grade">
+                <select className={inputClass} name="grade" value={filters.grade} onChange={handleFilterChange}>
+                  <option value="">All grades</option>
+                  {GRADES.map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}
+                </select>
+              </Field>
+              <Field label="Support need">
+                <select className={inputClass} name="supportLevel" value={filters.supportLevel} onChange={handleFilterChange}>
+                  <option value="">All indicators</option>
+                  <option value="low_support">Low support need</option>
+                  <option value="medium_support">Medium support need</option>
+                  <option value="high_support">High support need</option>
+                  <option value="unknown">Pending / unknown</option>
+                </select>
+              </Field>
+              <Field label="Session type">
+                <select className={inputClass} name="mode" value={filters.mode} onChange={handleFilterChange}>
+                  <option value="">All session types</option>
+                  <option value="identification">Identification</option>
+                  <option value="improvement">Improvement</option>
+                  {isSuperAdmin && <option value="data_collection">Data collection</option>}
+                  {isSuperAdmin && <option value="assigned">Assigned</option>}
+                  {isSuperAdmin && <option value="demo">Demo</option>}
+                </select>
+              </Field>
+              <Field label="Status">
+                <select className={inputClass} name="status" value={filters.status} onChange={handleFilterChange}>
+                  <option value="">All statuses</option>
+                  <option value="in_progress">In progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </Field>
+              <div className="flex items-end">
+                <button onClick={() => fetchResults(filters)} className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#17211E] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#0F5F48]">
+                  <SlidersHorizontal className="h-4 w-4" /> Apply filters
+                </button>
+              </div>
+            </div>
+          </GuardianCard>
+
+          <div className="overflow-hidden rounded-lg border border-[#DCE5E0] bg-white shadow-[0_4px_14px_rgba(16,36,30,0.045)]">
+            <div className="overflow-x-auto">
+              <table className="min-w-[860px] w-full">
+                <thead className="bg-[#F6F9F7]">
+                  <tr>
+                    {["Session", "Type", "Recording evidence", "Support indicator", "Status", "Action"].map((heading) => (
+                      <th key={heading} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-[#667085]">{heading}</th>
+                    ))}
                   </tr>
-                );
-              })}
-              {!loading && !records.length && (
-                <tr><td colSpan={11} className="p-14 text-center font-bold text-slate-500">No speech sessions completed yet.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody className="divide-y divide-[#E8EEEA]">
+                  {loading ? (
+                    <tr><td colSpan={6} className="p-10 text-center text-sm font-semibold text-slate-500">Loading results...</td></tr>
+                  ) : records.map((record) => {
+                    const student = record.studentId || {};
+                    const validAttempts = Number(record.attemptSummary?.validAttemptCount || 0);
+                    const totalAttempts = Number(record.attemptSummary?.totalAttemptCount || 0);
+                    return (
+                      <tr key={record._id} className="align-top transition hover:bg-[#FBFDFC]">
+                        <td className="px-4 py-4">
+                          <p className="text-[13px] font-bold text-[#101828]">{student.fullName || "Student"}</p>
+                          <p className="mt-1 text-xs font-medium text-[#667085]">
+                            {record.completedAt ? new Date(record.completedAt).toLocaleString() : "Not completed"}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <p className="text-[13px] font-semibold text-[#101828]">{getActivityLabel(record)}</p>
+                          <p className="mt-1 text-xs font-medium text-[#667085]">{formatSpeechLabel(record.mode, "Speech session")}</p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <p className="text-[13px] font-bold text-[#101828]">{validAttempts}/{totalAttempts} usable</p>
+                          {isSuperAdmin && (
+                            <p className="mt-1 text-xs font-medium text-[#667085]">{record.manualLabelCount || 0} manual label(s)</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-4">
+                          <GuardianStatusBadge value={record.supportLevel || "unknown"} type="support" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <GuardianStatusBadge value={record.status || "in_progress"} />
+                          {record.snapshotStatus && (
+                            <p className="mt-2 text-xs font-medium text-[#667085]">Evidence: {formatSpeechLabel(record.snapshotStatus)}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-4">
+                          <button onClick={() => setDetailSessionId(record._id)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#DCE5E0] bg-white px-3 py-1.5 text-xs font-semibold text-[#344054] transition hover:border-[#9FCDBB] hover:bg-[#F3FAF6]">
+                            <Eye className="h-4 w-4" /> Review
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {!loading && !records.length && (
+                    <tr><td colSpan={6} className="p-12 text-center text-sm font-semibold text-slate-500">No speech sessions match these filters.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
 
       {detailSessionId && (
-        <SessionDetailModal sessionId={detailSessionId} onClose={() => setDetailSessionId("")} />
+        <SessionDetailModal
+          sessionId={detailSessionId}
+          isSuperAdmin={isSuperAdmin}
+          onClose={() => setDetailSessionId("")}
+        />
       )}
     </div>
   );

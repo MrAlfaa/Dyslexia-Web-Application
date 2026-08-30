@@ -8,6 +8,7 @@ import {
   getAttemptPlaybackUrl,
   summarizeSessionQuality,
 } from "./speechSessionPresentation.utils";
+import { resolveAttemptAsrProvider } from "./speechSupportPresentation.utils";
 
 const hasValue = (value) => value !== undefined && value !== null && value !== "";
 
@@ -38,9 +39,9 @@ const formatDuration = (milliseconds, t) =>
     : t("guardian_not_available");
 
 const SafeStat = ({ label, value }) => (
-  <div className="rounded-xl border border-[#E5EDE7] bg-[#F8FBF8] p-3">
-    <dt className="text-[11px] font-semibold uppercase text-[#5B6475]">{label}</dt>
-    <dd className="mt-1.5 text-base font-bold text-[#101828]">{value}</dd>
+  <div className="rounded-lg border border-[#E5EDE7] bg-[#F8FBF8] p-3">
+    <dt className="text-[10px] font-semibold uppercase tracking-[0.05em] text-[#5B6475]">{label}</dt>
+    <dd className="mt-1 text-sm font-bold text-[#101828]">{value}</dd>
   </div>
 );
 
@@ -72,7 +73,7 @@ const SafePatternPill = ({ active, label, t }) => (
 
 function SummaryTab({ session, quality, t, language }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <SafeStat label={t("guardian_session_completed")} value={formatDate(session.completedAt, language, t("guardian_not_available"))} />
         <SafeStat label={t("guardian_session_attempts")} value={quality.total} />
@@ -82,15 +83,15 @@ function SummaryTab({ session, quality, t, language }) {
         <SafeStat label={t("guardian_invalid_recordings")} value={quality.unusable} />
       </dl>
 
-      <section className="rounded-xl border border-[#D8ECE3] bg-[#F8FBF8] p-4">
+      <section className="rounded-lg border border-[#D8ECE3] bg-[#F8FBF8] p-3.5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h4 className="text-sm font-bold text-[#101828]">{t("guardian_session_recording_summary")}</h4>
-            <p className="mt-1 text-sm text-[#5B6475]">{t("guardian_session_recording_summary_help")}</p>
+            <p className="mt-1 text-xs text-[#5B6475]">{t("guardian_session_recording_summary_help")}</p>
           </div>
           <QualityPill status={quality.status} t={t} />
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
           <span>{t("guardian_good_audio")}: <strong>{quality.good}</strong></span>
           <span>{t("guardian_fair_audio")}: <strong>{quality.fair}</strong></span>
           <span>{t("guardian_poor_audio")}: <strong>{quality.poor}</strong></span>
@@ -98,9 +99,9 @@ function SummaryTab({ session, quality, t, language }) {
         </div>
       </section>
 
-      <section className="rounded-xl border border-[#D8EAF7] bg-[#F3FAFF] p-4">
+      <section className="rounded-lg border border-[#D8EAF7] bg-[#F3FAFF] p-3.5">
         <h4 className="text-sm font-bold text-[#24516F]">{t("guardian_session_safe_interpretation")}</h4>
-        <p className="mt-2 text-sm leading-6 text-[#37556D]">
+        <p className="mt-1.5 text-xs leading-5 text-[#37556D]">
           {quality.unusable > 0
             ? t("guardian_session_safe_interpretation_retry")
             : t("guardian_session_safe_interpretation_ready")}
@@ -122,7 +123,7 @@ function RecordingTab({ attempts, t }) {
         const quality = attempt.audioQuality?.qualityLabel || "unavailable";
         const safeStatus = attempt.validAudio === false || quality === "invalid" ? "review" : quality;
         return (
-          <article key={attempt._id || `${attempt.promptId}-${index}`} className="rounded-xl border border-[#E5EDE7] p-4">
+          <article key={attempt._id || `${attempt.promptId}-${index}`} className="rounded-lg border border-[#E5EDE7] p-3.5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase text-[#5B6475]">{t("guardian_session_attempt_number", { count: index + 1 })}</p>
@@ -162,7 +163,7 @@ function WordSoundTab({ attempts, t }) {
   return (
     <div className="space-y-3">
       {attempts.map((attempt, index) => (
-        <article key={attempt._id || `${attempt.promptId}-${index}`} className="rounded-xl border border-[#E5EDE7] p-4">
+        <article key={attempt._id || `${attempt.promptId}-${index}`} className="rounded-lg border border-[#E5EDE7] p-3.5">
           <h4 className="text-base font-bold text-[#101828]">{attempt.targetText || attempt.promptId || t("guardian_not_available")}</h4>
 
           {attempt.wordReading ? (
@@ -252,7 +253,7 @@ function TechnicalTab({ session, attempts, actionId, onRecompute, onReprocess, t
           </div>
           <dl className="mt-3 grid gap-3 text-xs sm:grid-cols-2">
             <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_processing_status")}</dt><dd>{attempt.processingStatus || unavailable}</dd></div>
-            <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_provider")}</dt><dd>{attempt.wordReading?.asrProvider || unavailable}</dd></div>
+            <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_provider")}</dt><dd>{resolveAttemptAsrProvider(attempt, unavailable)}</dd></div>
             <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_model_score")}</dt><dd>{formatNumber(attempt.pronunciationModel?.predictedPronunciationScore, unavailable)}</dd></div>
             <div><dt className="font-bold text-[#5B6475]">{t("guardian_model_version")}</dt><dd>{attempt.pronunciationModel?.modelVersion || unavailable}</dd></div>
             <div><dt className="font-bold text-[#5B6475]">{t("guardian_session_features_used")}</dt><dd>{attempt.pronunciationModel?.featuresUsedCount ?? unavailable}</dd></div>
@@ -309,7 +310,7 @@ function SpeechSessionDrawer({
       closeLabel={t("guardian_session_close")}
       onClose={onClose}
     >
-      <div className="mb-5 flex gap-1 overflow-x-auto border-b border-[#E5EDE7]" role="tablist" aria-label={t("guardian_session_detail_sections")}>
+      <div className="mb-4 flex gap-1 overflow-x-auto border-b border-[#E5EDE7]" role="tablist" aria-label={t("guardian_session_detail_sections")}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -319,7 +320,7 @@ function SpeechSessionDrawer({
             aria-controls={`guardian-session-panel-${tab.id}`}
             id={`guardian-session-tab-${tab.id}`}
             onClick={() => setActiveTab(tab.id)}
-            className={`guardian-focus min-h-11 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition ${
+            className={`guardian-focus min-h-10 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-semibold transition ${
               resolvedActiveTab === tab.id
                 ? "border-[#157A5A] text-[#0F5F48]"
                 : "border-transparent text-[#5B6475] hover:text-[#101828]"

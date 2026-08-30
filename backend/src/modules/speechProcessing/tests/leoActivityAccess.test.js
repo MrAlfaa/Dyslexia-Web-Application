@@ -80,6 +80,34 @@ test("the activity map gives locked activities the current Leo pick as an action
   );
 });
 
+test("the activity map preserves stars from a Mongoose progress subdocument", () => {
+  const progressSubdocument = {};
+  Object.defineProperties(progressSubdocument, {
+    activityId: { value: "leo_first_sound_hunt", enumerable: false },
+    status: { value: "completed", enumerable: false },
+    starsEarned: { value: 14, enumerable: false },
+    stars: { value: 14, enumerable: false },
+    attemptsCompleted: { value: 8, enumerable: false },
+  });
+  const speech = {
+    identificationStatus: "completed",
+    improvementUnlocked: true,
+    supportLevel: "high_support",
+    completedActivityIds: ["leo_first_sound_hunt"],
+    currentActivityId: "leo_echo_roar",
+    activityProgress: [progressSubdocument],
+  };
+
+  const activity = buildActivityMap({
+    speech,
+    plan: getActivityPlan({ speech }),
+  }).find((item) => item.activityId === "leo_first_sound_hunt");
+
+  assert.equal(activity.starsEarned, 14);
+  assert.equal(activity.stars, 14);
+  assert.equal(activity.attemptsCompleted, 8);
+});
+
 test("activity detail denies a locked activity without returning prompts", async () => {
   const originalStudentFindById = Student.findById;
   const originalAttemptFind = SpeechAttempt.find;

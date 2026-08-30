@@ -13,7 +13,7 @@ function GuardianButton({ children, variant = "primary", className = "", ...prop
   return (
     <button
       type="button"
-      className={`guardian-focus inline-flex items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant] || variants.primary} ${className}`}
+      className={`guardian-focus inline-flex min-h-10 items-center justify-center rounded-lg border px-3.5 py-2 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant] || variants.primary} ${className}`}
       {...props}
     >
       {children}

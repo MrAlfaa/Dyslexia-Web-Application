@@ -28,6 +28,31 @@ const speechSessionSchema = new mongoose.Schema(
       enum: ["demo", "assigned", "data_collection", "identification", "improvement"],
       default: "demo",
     },
+    assessmentRole: {
+      type: String,
+      enum: ["baseline", "training", "checkpoint"],
+      default: "training",
+    },
+    checkpointSequence: {
+      type: Number,
+      default: 0,
+    },
+    checkpointForm: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 4,
+    },
+    checkpointPromptSet: [String],
+    snapshotStatus: {
+      type: String,
+      enum: ["not_started", "processing", "ready", "insufficient_data", "failed"],
+      default: "not_started",
+    },
+    snapshotId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SpeechAssessmentSnapshot",
+    },
     status: {
       type: String,
       enum: ["in_progress", "completed"],
@@ -64,6 +89,18 @@ const speechSessionSchema = new mongoose.Schema(
       meanProbabilities: mongoose.Schema.Types.Mixed,
       validPredictionCount: Number,
       modelVersion: String,
+      updatedAt: Date,
+    },
+    phonemeSummary: {
+      status: String,
+      analyzedAttemptCount: Number,
+      meanPhonemeErrorRate: Number,
+      initialSoundErrorRate: Number,
+      finalSoundErrorRate: Number,
+      vowelMismatchRate: Number,
+      consonantClusterErrorRate: Number,
+      commonErrorPattern: String,
+      attemptsNeedingReview: Number,
       updatedAt: Date,
     },
     startedAt: {

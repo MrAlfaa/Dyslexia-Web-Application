@@ -459,11 +459,79 @@ body {
 
 .guardian-shell {
   font-family: var(--font-guardian);
-  background: #f4f7f5;
+  background: #f3f6f5;
+  font-size: 14px;
 }
 
 .guardian-shell::before {
   content: none;
+}
+
+.guardian-sidebar {
+  border-color: #303a37;
+  background: #171e1c;
+  box-shadow: 10px 0 30px rgba(14, 24, 21, 0.08);
+}
+
+.guardian-sidebar__brand,
+.guardian-sidebar__footer {
+  background: #10241e;
+}
+
+.guardian-sidebar__menu-button {
+  border: 1px solid rgba(224, 235, 230, 0.1);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.guardian-sidebar__menu-button:hover {
+  border-color: rgba(245, 184, 75, 0.34);
+  background: rgba(245, 184, 75, 0.09);
+  color: #f6cd7c;
+}
+
+.guardian-sidebar__nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+}
+
+.guardian-sidebar__nav::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.guardian-sidebar__section-label {
+  color: #7d9c90;
+}
+
+.guardian-sidebar [data-nav-section="Developer Tools"] .guardian-sidebar__section-label {
+  color: #d9a63d;
+}
+
+.guardian-sidebar__link[data-guardian-nav-active="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 7px auto 7px 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #f5b84b;
+}
+
+.guardian-sidebar__link:not([data-guardian-nav-active="true"]):hover svg {
+  color: #f5b84b;
+}
+
+.guardian-workspace {
+  background:
+    linear-gradient(180deg, rgba(231, 244, 237, 0.36) 0, rgba(243, 246, 245, 0) 180px),
+    #f3f6f5;
+}
+
+.guardian-shell button,
+.guardian-shell input,
+.guardian-shell select {
+  letter-spacing: 0;
 }
 
 .child-game-shell {
@@ -546,6 +614,11 @@ body {
 .animate-sound-wave {
   height: 18px;
   animation: sound-wave 920ms ease-in-out infinite alternate;
+}
+
+.recording-animations-paused,
+.recording-animations-paused * {
+  animation-play-state: paused !important;
 }
 
 @keyframes float {

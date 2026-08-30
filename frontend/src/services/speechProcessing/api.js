@@ -49,6 +49,9 @@ export const getMySpeechProgress = () =>
 export const getChildSpeechProgress = () =>
   API.get("/speech-processing/child/progress");
 
+export const getChildSpeechProgressTrend = () =>
+  API.get("/speech-processing/child/progress-trend");
+
 export const getSpeechIdentificationStatus = () =>
   API.get("/speech-processing/identification/status");
 
@@ -108,6 +111,9 @@ export const getGuardianSpeechImprovementProgress = (childId) =>
 
 export const getGuardianSpeechSessionHistory = (childId) =>
   GuardianSpeechAPI.get(`/speech-processing/guardian/session-history/${childId}`);
+
+export const getGuardianSpeechProgressComparison = (childId) =>
+  GuardianSpeechAPI.get(`/speech-processing/guardian/progress-comparison/${childId}`);
 
 export const getGuardianSpeechActivityPlan = (childId) =>
   GuardianSpeechAPI.get(`/speech-processing/guardian/activity-plan/${childId}`);

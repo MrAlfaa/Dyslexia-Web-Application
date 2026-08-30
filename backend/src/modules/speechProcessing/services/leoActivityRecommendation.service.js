@@ -67,10 +67,17 @@ const getActivityById = (activityId) =>
   getImprovementActivities().find((activity) => activity.activityId === activityId) || null;
 
 const normalizeProgress = (speech = {}) =>
-  (speech.activityProgress || []).map((item) => ({
-    ...item,
-    starsEarned: item.starsEarned ?? item.stars ?? 0,
-  }));
+  (speech.activityProgress || []).map((item) => {
+    const plainItem = typeof item?.toObject === "function" ? item.toObject() : item || {};
+    return {
+      ...plainItem,
+      activityId: item?.activityId ?? plainItem.activityId,
+      status: item?.status ?? plainItem.status,
+      starsEarned: item?.starsEarned ?? item?.stars ?? plainItem.starsEarned ?? plainItem.stars ?? 0,
+      stars: item?.stars ?? item?.starsEarned ?? plainItem.stars ?? plainItem.starsEarned ?? 0,
+      attemptsCompleted: item?.attemptsCompleted ?? plainItem.attemptsCompleted ?? 0,
+    };
+  });
 
 const getReasonOverride = (signals) => {
   if (signals.invalidPoorRate > 0.5) return { reasonCode: "audio_quality", activityId: "leo_echo_roar" };

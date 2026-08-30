@@ -15,7 +15,7 @@ import GuardianRequestState from "../../../../components/guardian/ui/GuardianReq
 import GuardianStatCard from "../../../../components/guardian/ui/GuardianStatCard";
 import GuardianStatusBadge from "../../../../components/guardian/ui/GuardianStatusBadge";
 import { useGuardianChild } from "../../../../contexts/GuardianChildContext";
-import { activityTitle, formatPercent } from "./speechGuardianUtils";
+import { activityTitle, formatPercent, formatSpeechLabel } from "./speechGuardianUtils";
 import GuardianSpeechInsightCard from "./GuardianSpeechInsightCard";
 import { useGuardianPageData } from "./shared";
 
@@ -134,7 +134,7 @@ function SpeechOverview() {
       ) : (
         <>
           <section aria-labelledby="guardian-current-state">
-            <h3 id="guardian-current-state" className="mb-3 text-lg font-bold text-[#101828]">
+            <h3 id="guardian-current-state" className="mb-2.5 text-base font-bold text-[#101828]">
               {t("guardian_overview_current_state")}
             </h3>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -168,8 +168,8 @@ function SpeechOverview() {
           <GuardianCard className={attentionItems.length ? "border-[#F4D7A1] bg-[#FFF9EB]" : "border-[#D8ECE3] bg-[#F8FBF8]"}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_overview_attention_title")}</p>
-                <h3 className="mt-1 text-xl font-bold text-[#101828]">
+                <p className="text-xs font-semibold text-[#157A5A]">{t("guardian_overview_attention_title")}</p>
+                <h3 className="mt-1 text-lg font-bold text-[#101828]">
                   {attentionItems.length ? t("guardian_overview_attention_found") : t("guardian_overview_attention_clear")}
                 </h3>
               </div>
@@ -187,11 +187,11 @@ function SpeechOverview() {
           <GuardianCard className="border-[#CFE6DC] bg-white">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
-                <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_overview_next_action")}</p>
-                <h3 className="mt-1 text-2xl font-bold text-[#101828]">
+                <p className="text-xs font-semibold text-[#157A5A]">{t("guardian_overview_next_action")}</p>
+                <h3 className="mt-1 text-xl font-bold text-[#101828]">
                   {activityTitle(recommendation.nextActivity || overview?.nextActivity) || t("guardian_waiting_for_next_activity")}
                 </h3>
-                <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-[#5B6475]">
+                <p className="mt-1.5 max-w-3xl text-[13px] font-medium leading-5 text-[#5B6475]">
                   {recommendation.guardianReason || t("guardian_overview_next_action_fallback")}
                 </p>
               </div>
@@ -237,7 +237,7 @@ function SpeechOverview() {
               <GuardianStatCard
                 label={t("guardian_sound_patterns")}
                 value={latestSession?.phonemeSummary?.meanPhonemeErrorRate === undefined ? t("guardian_not_available") : formatPercent(latestSession.phonemeSummary.meanPhonemeErrorRate)}
-                helper={latestSession?.phonemeSummary?.commonErrorPattern || t("guardian_no_common_pattern")}
+                helper={formatSpeechLabel(latestSession?.phonemeSummary?.commonErrorPattern, t("guardian_no_common_pattern"))}
                 tone="amber"
               />
               <GuardianStatCard label={t("guardian_attempts_to_review")} value={attemptsNeedingReview} helper={t("guardian_review_recordings_helper")} tone="slate" />

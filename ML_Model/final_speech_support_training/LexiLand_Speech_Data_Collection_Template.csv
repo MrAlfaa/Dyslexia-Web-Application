@@ -1,0 +1,2 @@
+student_code,grade,session_id,attempt_id,activity_id,task_type,target_text,teacher_transcript,item_correct,error_type,speech_support_label,label_confidence,label_notes,consent_confirmed
+S001,3,,,leo_first_check,read_aloud_word,cat,,,"none","low_support|medium_support|high_support|needs_review","1-5","Use anonymous child codes only. Do not enter child names.","yes/no"

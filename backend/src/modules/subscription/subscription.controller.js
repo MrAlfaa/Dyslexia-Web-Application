@@ -53,7 +53,7 @@ exports.devChangePlan = async (req, res) => {
         childLimit: getPlanLimit(plan),
         planStartedAt: new Date(),
       },
-      { new: true }
+      { returnDocument: "after" }
     ).select("-password");
 
     if (!guardian) {

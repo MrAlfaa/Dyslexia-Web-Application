@@ -203,7 +203,7 @@ function SpeechSessionHistory() {
         <GuardianRequestState state="no_owned_children" />
       ) : (
         <>
-          <GuardianCard className="p-4">
+          <GuardianCard className="p-3.5">
             <div className="grid gap-3 md:grid-cols-[1fr_220px]">
               <label>
                 <span className="sr-only">{t("guardian_session_search_label")}</span>
@@ -212,7 +212,7 @@ function SpeechSessionHistory() {
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder={t("guardian_session_search_placeholder")}
-                  className="guardian-focus min-h-11 w-full rounded-xl border border-[#E5EDE7] bg-white px-4 py-3 text-sm font-medium text-[#101828] outline-none focus:border-[#157A5A]"
+                  className="guardian-focus min-h-10 w-full rounded-lg border border-[#D7E2DC] bg-white px-3 py-2 text-[13px] font-medium text-[#101828] outline-none focus:border-[#157A5A]"
                 />
               </label>
               <label>
@@ -231,13 +231,13 @@ function SpeechSessionHistory() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[800px] border-collapse text-left">
                   <thead className="border-b border-[#E5EDE7] bg-[#F8FBF8]">
-                    <tr className="text-xs font-semibold uppercase text-[#5B6475]">
-                      <th className="px-4 py-3">{t("guardian_session_date")}</th>
-                      <th className="px-4 py-3">{t("guardian_session_mode")}</th>
-                      <th className="px-4 py-3">{t("guardian_session_activity")}</th>
-                      <th className="px-4 py-3">{t("guardian_session_quality_status")}</th>
-                      <th className="px-4 py-3">{t("guardian_session_attempts")}</th>
-                      <th className="px-4 py-3 text-right">{t("guardian_session_action")}</th>
+                    <tr className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#5B6475]">
+                      <th className="px-3.5 py-2.5">{t("guardian_session_date")}</th>
+                      <th className="px-3.5 py-2.5">{t("guardian_session_mode")}</th>
+                      <th className="px-3.5 py-2.5">{t("guardian_session_activity")}</th>
+                      <th className="px-3.5 py-2.5">{t("guardian_session_quality_status")}</th>
+                      <th className="px-3.5 py-2.5">{t("guardian_session_attempts")}</th>
+                      <th className="px-3.5 py-2.5 text-right">{t("guardian_session_action")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E5EDE7]">
@@ -245,16 +245,16 @@ function SpeechSessionHistory() {
                       const quality = summarizeSessionQuality(session);
                       return (
                         <tr key={session._id} className="align-middle hover:bg-[#FBFDFC]">
-                          <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-[#5B6475]">
+                          <td className="whitespace-nowrap px-3.5 py-3 text-xs font-medium text-[#5B6475]">
                             {formatDate(session.completedAt, i18n.language, t("guardian_not_available"))}
                           </td>
-                          <td className="px-4 py-4 text-sm font-semibold text-[#101828]">
+                          <td className="px-3.5 py-3 text-xs font-semibold text-[#101828]">
                             {t(`guardian_session_mode_${session.mode || "unknown"}`)}
                           </td>
-                          <td className="max-w-[260px] px-4 py-4 text-sm font-bold text-[#101828]">
+                          <td className="max-w-[260px] px-3.5 py-3 text-[13px] font-semibold text-[#101828]">
                             {getActivityTitle(session, t)}
                           </td>
-                          <td className="px-4 py-4">
+                          <td className="px-3.5 py-3">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="rounded-full bg-[#F5F7F6] px-2.5 py-1 text-xs font-semibold text-[#5B6475]">
                                 {t(`guardian_session_quality_${quality.status}`)}
@@ -264,8 +264,8 @@ function SpeechSessionHistory() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-4 text-sm font-bold text-[#101828]">{quality.total}</td>
-                          <td className="px-4 py-4 text-right">
+                          <td className="px-3.5 py-3 text-[13px] font-semibold text-[#101828]">{quality.total}</td>
+                          <td className="px-3.5 py-3 text-right">
                             <GuardianButton variant="secondary" onClick={() => openSession(session)}>
                               {t("guardian_session_view")}
                             </GuardianButton>

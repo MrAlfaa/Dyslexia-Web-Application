@@ -11,7 +11,7 @@ import GuardianRequestState from "../../../../components/guardian/ui/GuardianReq
 import GuardianStatCard from "../../../../components/guardian/ui/GuardianStatCard";
 import GuardianStatusBadge from "../../../../components/guardian/ui/GuardianStatusBadge";
 import { useGuardianChild } from "../../../../contexts/GuardianChildContext";
-import { activityById, formatDate, formatPercent } from "./speechGuardianUtils";
+import { activityById, formatDate, formatPercent, formatSpeechLabel } from "./speechGuardianUtils";
 import { useGuardianPageData } from "./shared";
 
 function SpeechIdentificationResult() {
@@ -71,32 +71,50 @@ function SpeechIdentificationResult() {
       ) : (
         <>
           <GuardianCard>
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
               <div>
-                <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_baseline_completeness")}</p>
-                <h3 className="mt-1 text-2xl font-bold text-[#101828]">
-                  {baselineComplete
-                    ? t("guardian_baseline_complete_heading")
-                    : t("guardian_baseline_waiting_heading")}
-                </h3>
-                <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-[#5B6475]">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-[#157A5A]">{t("guardian_baseline_completeness")}</p>
+                    <h3 className="mt-1 text-xl font-bold text-[#101828]">
+                      {baselineComplete
+                        ? t("guardian_baseline_complete_heading")
+                        : t("guardian_baseline_waiting_heading")}
+                    </h3>
+                  </div>
+                  <GuardianStatusBadge value={result?.identificationStatus || "not_started"} />
+                </div>
+                <p className="mt-1.5 max-w-3xl text-[13px] font-medium leading-5 text-[#5B6475]">
                   {baselineComplete
                     ? t("guardian_baseline_complete_message")
                     : t("guardian_baseline_waiting_message")}
                 </p>
               </div>
-              <GuardianStatusBadge value={result?.identificationStatus || "not_started"} />
+              <div className="border-t border-[#DCE5E0] pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+                <p className="text-xs font-semibold text-[#5B6475]">{t("guardian_support_indicator")}</p>
+                <div className="mt-2">
+                  <GuardianStatusBadge value={baselineComplete ? result?.supportLevel : "unknown"} type="support" />
+                </div>
+                <p className="mt-2 text-xs font-medium leading-5 text-[#5B6475]">
+                  {baselineComplete && result?.supportLevel && result.supportLevel !== "unknown"
+                    ? t(`guardian_${result.supportLevel}_message`)
+                    : t("guardian_support_indicator_pending")}
+                </p>
+              </div>
             </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <GuardianStatCard label={t("guardian_total_attempts")} value={attempts.totalAttemptCount || 0} tone="slate" />
               <GuardianStatCard label={t("guardian_valid_recordings")} value={attempts.validAttemptCount || 0} tone="emerald" />
               <GuardianStatCard label={t("guardian_completed_date")} value={formatDate(result?.completedAt)} tone="sky" />
             </div>
+            <p className="mt-3 text-xs font-medium leading-5 text-[#667085]">
+              {t("guardian_support_non_clinical")}
+            </p>
           </GuardianCard>
 
           <GuardianCard>
             <div>
-              <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_evidence_quality")}</p>
+              <p className="text-xs font-semibold text-[#157A5A]">{t("guardian_evidence_quality")}</p>
               <h3 className="mt-1 text-xl font-bold text-[#101828]">{t("guardian_recording_quality_heading")}</h3>
               <p className="mt-2 text-sm font-medium leading-6 text-[#5B6475]">{t("guardian_recording_quality_message")}</p>
             </div>
@@ -109,7 +127,7 @@ function SpeechIdentificationResult() {
           </GuardianCard>
 
           <GuardianCard>
-            <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_observations")}</p>
+            <p className="text-xs font-semibold text-[#157A5A]">{t("guardian_observations")}</p>
             <h3 className="mt-1 text-xl font-bold text-[#101828]">{t("guardian_observations_heading")}</h3>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <GuardianStatCard
@@ -121,7 +139,7 @@ function SpeechIdentificationResult() {
               <GuardianStatCard
                 label={t("guardian_sound_patterns")}
                 value={phoneme.meanPhonemeErrorRate === undefined ? t("guardian_not_available") : formatPercent(phoneme.meanPhonemeErrorRate)}
-                helper={phoneme.commonErrorPattern || t("guardian_no_common_pattern")}
+                helper={formatSpeechLabel(phoneme.commonErrorPattern, t("guardian_no_common_pattern"))}
                 tone="amber"
               />
               <GuardianStatCard
@@ -165,7 +183,6 @@ function SpeechIdentificationResult() {
                   [t("guardian_model_version"), result.recentSession.modelVersion || "-"],
                   [t("guardian_snapshot_status"), result.recentSession.snapshotStatus || "-"],
                   [t("guardian_prediction_count"), result.recentSession.pronunciationSummary?.validPredictionCount || 0],
-                  [t("guardian_support_score"), result.supportScore === undefined ? "-" : formatPercent(result.supportScore)],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-lg bg-white px-4 py-3">
                     <dt className="text-xs font-semibold text-[#5B6475]">{label}</dt>

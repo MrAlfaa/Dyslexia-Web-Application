@@ -29,9 +29,27 @@ test("a wrong selection followed by a correct retry awards only the correct resu
 
 test("repeated successful attempts award the best result once per prompt", () => {
   const award = getActivityAward([
-    { promptId: "prompt-1", attemptPhase: "training", validAudio: true, starsEarned: 1 },
-    { promptId: "prompt-1", attemptPhase: "training", validAudio: true, starsEarned: 3 },
-    { promptId: "prompt-2", attemptPhase: "training", validAudio: true, itemResult: { starsEarned: 2 } },
+    {
+      promptId: "prompt-1",
+      attemptPhase: "training",
+      validAudio: true,
+      starsEarned: 1,
+      wordReading: { attemptStatus: "valid", asrText: "cat" },
+    },
+    {
+      promptId: "prompt-1",
+      attemptPhase: "training",
+      validAudio: true,
+      starsEarned: 3,
+      wordReading: { attemptStatus: "valid", asrText: "cat" },
+    },
+    {
+      promptId: "prompt-2",
+      attemptPhase: "training",
+      validAudio: true,
+      itemResult: { starsEarned: 2 },
+      wordReading: { attemptStatus: "valid", asrText: "bat" },
+    },
   ]);
 
   assert.equal(award, 5);
@@ -42,6 +60,20 @@ test("invalid recordings and checkpoint attempts award no stars", () => {
     { promptId: "invalid", attemptPhase: "training", validAudio: false, starsEarned: 3 },
     { promptId: "checkpoint", attemptPhase: "checkpoint", validAudio: true, starsEarned: 3 },
     { promptId: "wrong-selection", attemptPhase: "training", validAudio: true, selectedCorrect: false, starsEarned: 3 },
+  ]);
+
+  assert.equal(award, 0);
+});
+
+test("usable audio without recognizable speech awards no stars", () => {
+  const award = getActivityAward([
+    {
+      promptId: "sentence-1",
+      attemptPhase: "training",
+      validAudio: true,
+      starsEarned: 3,
+      sentenceReading: { status: "asr_empty", asrText: "" },
+    },
   ]);
 
   assert.equal(award, 0);

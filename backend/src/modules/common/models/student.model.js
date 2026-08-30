@@ -108,6 +108,26 @@ const studentSchema = new mongoose.Schema(
           default: 0,
         },
         weakSkillFocus: String,
+        baselineSnapshotId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "SpeechAssessmentSnapshot",
+        },
+        latestCheckpointSnapshotId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "SpeechAssessmentSnapshot",
+        },
+        checkpointCount: {
+          type: Number,
+          default: 0,
+        },
+        activitiesSinceCheckpoint: {
+          type: Number,
+          default: 0,
+        },
+        baselineRetestRequired: {
+          type: Boolean,
+          default: false,
+        },
         activityProgress: [
           {
             activityId: String,

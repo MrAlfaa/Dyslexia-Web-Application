@@ -20,6 +20,7 @@ import {
   canAttemptProgress,
   canPlayTargetAudio,
   canSubmitLeoPrompt,
+  claimSessionStart,
   createSubmissionFailureFeedback,
 } from "./components/speechGameFlow.utils";
 
@@ -74,6 +75,7 @@ function LeoIdentificationGame() {
   const [isRecording, setIsRecording] = useState(false);
   const [startFailed, setStartFailed] = useState(false);
   const advanceTimerRef = useRef(null);
+  const sessionStartRef = useRef("");
   const sounds = useLeoSoundEffects();
 
   const theme = useMemo(() => getLeoActivityTheme("leo_first_check"), []);
@@ -92,6 +94,7 @@ function LeoIdentificationGame() {
   });
 
   const startSession = useCallback(async () => {
+    if (!claimSessionStart(sessionStartRef, "leo_identification")) return;
     setLoading(true);
     setStartFailed(false);
     setError("");
@@ -106,6 +109,7 @@ function LeoIdentificationGame() {
           : fallbackPrompts
       );
     } catch (err) {
+      sessionStartRef.current = "";
       setSessionId("");
       setStartFailed(true);
       if (err.response?.status === 409) {
@@ -388,7 +392,7 @@ function LeoIdentificationGame() {
                   </div>
                 </div>
                 <div
-                  className={`min-h-[16rem] ${isRecording ? "pointer-events-none [&_*]:[animation-play-state:paused!important]" : ""}`}
+                  className={`min-h-[16rem] ${isRecording ? "recording-animations-paused pointer-events-none" : ""}`}
                   data-map-active={String(!isRecording)}
                   aria-hidden={isRecording}
                   inert={isRecording || undefined}

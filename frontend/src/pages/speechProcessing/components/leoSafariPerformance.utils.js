@@ -1,6 +1,12 @@
 const MOBILE_VIEWPORT_MAX = 768;
 const LOW_MEMORY_MAX_GB = 2;
 
+export function getLeoGuideOffset(viewportWidth) {
+  return Number.isFinite(viewportWidth) && viewportWidth <= MOBILE_VIEWPORT_MAX
+    ? -0.55
+    : -1.4;
+}
+
 export function getSafariQuality({
   webgl = false,
   reducedMotion = false,

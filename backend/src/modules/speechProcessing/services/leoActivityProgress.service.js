@@ -12,8 +12,7 @@ const getActivityAward = (attempts = []) => {
     if (
       !attempt?.promptId ||
       attempt.attemptPhase === "checkpoint" ||
-      attempt.validAudio !== true ||
-      attempt.selectedCorrect === false
+      !isSuccessfulLeoAttempt(attempt)
     ) {
       return;
     }
@@ -56,3 +55,4 @@ const mergeActivityProgress = ({
 };
 
 module.exports = { getActivityAward, mergeActivityProgress };
+const { isSuccessfulLeoAttempt } = require("./leoAttemptProgress.service");

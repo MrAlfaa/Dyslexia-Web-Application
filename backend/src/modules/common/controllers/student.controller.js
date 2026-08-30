@@ -40,7 +40,7 @@ exports.updateProfile = async (req, res) => {
     const student = await Student.findByIdAndUpdate(
       req.user.id,
       profileUpdate,
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     ).select("-password");
 
     if (!student) {

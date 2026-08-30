@@ -16,6 +16,7 @@ const {
   getLeoPromptPrimaryAction,
   getSubmissionFailurePresentation,
   getSubmissionRetryLabelKey,
+  claimSessionStart,
   resolveGuardianChildId,
 } = speechGameFlow;
 
@@ -29,6 +30,22 @@ test("target playback allows only Echo Roar listen-and-repeat training", () => {
     activityId: "leo_echo_roar",
     taskType: "listen_repeat",
   }), true);
+});
+
+test("a game mount claims one session start per activity", () => {
+  const startRef = { current: "" };
+
+  assert.equal(claimSessionStart(startRef, "leo_first_sound_hunt"), true);
+  assert.equal(claimSessionStart(startRef, "leo_first_sound_hunt"), false);
+  assert.equal(claimSessionStart(startRef, "leo_echo_roar"), true);
+});
+
+test("identification and improvement flows guard development remount session starts", () => {
+  const improvementSource = readSiblingSource("./LeoActivityPlay.jsx");
+  const identificationSource = readSiblingSource("../LeoIdentificationGame.jsx");
+
+  assert.match(improvementSource, /claimSessionStart\(/);
+  assert.match(identificationSource, /claimSessionStart\(/);
 });
 
 test("target playback denies reading, checkpoint, and identification prompts", () => {

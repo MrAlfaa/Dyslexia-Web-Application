@@ -12,7 +12,7 @@ import GuardianRequestState from "../../../../components/guardian/ui/GuardianReq
 import GuardianStatCard from "../../../../components/guardian/ui/GuardianStatCard";
 import GuardianStatusBadge from "../../../../components/guardian/ui/GuardianStatusBadge";
 import { useGuardianChild } from "../../../../contexts/GuardianChildContext";
-import { activityTitle, formatPercent } from "./speechGuardianUtils";
+import { activityTitle, formatPercent, formatSpeechLabel } from "./speechGuardianUtils";
 import SpeechProgressTimeline from "./SpeechProgressTimeline";
 import { useGuardianPageData } from "./shared";
 
@@ -85,23 +85,58 @@ function SpeechImprovementProgress() {
             />
             <GuardianStatCard label={t("guardian_stars_earned")} value={progress?.stars || 0} helper={t("guardian_activity_stars_helper")} tone="amber" />
             <GuardianStatCard label={t("guardian_completed_activities")} value={`${completedCount}/${activities.length || 5}`} helper={t("guardian_activity_progress_helper")} tone="sky" />
-            <GuardianStatCard label={t("guardian_current_focus")} value={progress?.weakSkillFocus || recommendation.skillFocus || t("guardian_waiting")} helper={t("guardian_current_focus_helper")} tone="slate" />
+            <GuardianStatCard
+              label={t("guardian_current_focus")}
+              value={formatSpeechLabel(progress?.weakSkillFocus || recommendation.skillFocus, t("guardian_waiting"))}
+              helper={t("guardian_current_focus_helper")}
+              tone="slate"
+            />
           </div>
 
+          <GuardianCard className="border-[#CFE6DC] bg-[#FBFDFC]">
+            <div className="grid gap-4 md:grid-cols-3 md:divide-x md:divide-[#DCE5E0]">
+              <div className="md:pr-4">
+                <p className="text-xs font-semibold text-[#5B6475]">{t("guardian_baseline_support")}</p>
+                <div className="mt-2">
+                  <GuardianStatusBadge value={comparison?.baseline?.supportLevel || "unknown"} type="support" />
+                </div>
+              </div>
+              <div className="border-t border-[#DCE5E0] pt-4 md:border-t-0 md:px-4 md:pt-0">
+                <p className="text-xs font-semibold text-[#5B6475]">{t("guardian_latest_checkpoint_support")}</p>
+                <div className="mt-2">
+                  {comparison?.latestCheckpoint ? (
+                    <GuardianStatusBadge value={comparison.latestCheckpoint.supportLevel || "unknown"} type="support" />
+                  ) : (
+                    <span className="text-sm font-semibold text-[#667085]">{t("guardian_no_formal_checkpoint")}</span>
+                  )}
+                </div>
+              </div>
+              <div className="border-t border-[#DCE5E0] pt-4 md:border-t-0 md:pl-4 md:pt-0">
+                <p className="text-xs font-semibold text-[#5B6475]">{t("guardian_current_trend")}</p>
+                <p className="mt-2 text-base font-bold capitalize text-[#101828]">
+                  {formatStatus(comparison?.currentTrend, t("guardian_waiting_for_baseline"))}
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 border-t border-[#DCE5E0] pt-3 text-xs font-medium leading-5 text-[#667085]">
+              {t("guardian_formal_result_explanation")}
+            </p>
+          </GuardianCard>
+
           <GuardianCard className="border-[#CFE6DC] bg-[#F8FBF8]">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.55fr)] lg:items-stretch">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,0.45fr)] lg:items-stretch">
               <div>
-                <p className="text-sm font-semibold text-[#157A5A]">{t("guardian_recommended_action")}</p>
-                <h3 className="mt-1 text-2xl font-bold text-[#101828]">
+                <p className="text-xs font-semibold text-[#157A5A]">{t("guardian_recommended_action")}</p>
+                <h3 className="mt-1 text-xl font-bold text-[#101828]">
                   {activityTitle(recommendation.nextActivity || currentActivity) || t("guardian_waiting_for_next_activity")}
                 </h3>
-                <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-[#5B6475]">
+                <p className="mt-1.5 max-w-3xl text-[13px] font-medium leading-5 text-[#5B6475]">
                   {recommendation.guardianReason || t("guardian_recommendation_fallback")}
                 </p>
               </div>
               <div className="rounded-lg border border-[#D8ECE3] bg-white p-4">
                 <p className="text-xs font-semibold text-[#5B6475]">{t("guardian_current_activity")}</p>
-                <p className="mt-1 text-lg font-bold text-[#101828]">{activityTitle(currentActivity)}</p>
+                <p className="mt-1 text-base font-bold text-[#101828]">{activityTitle(currentActivity)}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <GuardianStatusBadge value={currentActivity?.state || (progress?.improvementUnlocked ? "current" : "locked")} />
                   <span className="rounded-lg bg-[#FFF6DF] px-3 py-1 text-xs font-semibold text-[#94600A]">
@@ -136,7 +171,7 @@ function SpeechImprovementProgress() {
                 {formatStatus(comparison?.currentTrend, t("guardian_waiting_for_baseline"))}
               </div>
             </div>
-            <div className="mt-5">
+            <div className="mt-4">
               <SpeechProgressTimeline
                 baseline={comparison?.baseline}
                 activityEstimates={comparison?.activityEstimates}
@@ -155,7 +190,7 @@ function SpeechImprovementProgress() {
             </div>
 
             {activities.length ? (
-              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                 {activities.map((activity, index) => {
                   const active = ["current", "recommended", "available"].includes(activity.state);
                   const done = activity.state === "completed";

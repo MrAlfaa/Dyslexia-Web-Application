@@ -42,6 +42,11 @@ node_modules/
 jspm_packages/
 .venv/
 venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
@@ -100,6 +105,16 @@ ML_Model/**
 !ML_Model/lexiland_pronunciation_support_model_artifacts/model_artifacts/pronunciation_support_classifier.joblib
 !ML_Model/lexiland_pronunciation_support_model_artifacts/model_artifacts/support_label_encoder.joblib
 !ML_Model/lexiland_pronunciation_support_model_artifacts/model_artifacts/training_summary.json
+!ML_Model/final_speech_support_training/
+!ML_Model/final_speech_support_training/README_TRAINING_GUIDE.md
+!ML_Model/final_speech_support_training/train_final_speech_support_model_colab.py
+!ML_Model/final_speech_support_training/LexiLand_Speech_Data_Collection_Template.csv
+!ML_Model/final_speech_support_model_artifacts/
+!ML_Model/final_speech_support_model_artifacts/README.md
+!ML_Model/final_speech_support_model_artifacts/final_speech_support_classifier.joblib
+!ML_Model/final_speech_support_model_artifacts/final_speech_label_encoder.joblib
+!ML_Model/final_speech_support_model_artifacts/final_speech_feature_columns.json
+!ML_Model/final_speech_support_model_artifacts/final_speech_training_summary.json
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -168,3 +183,17 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Local browser QA artifacts
+.playwright-cli/
+/output/
+
+# Local implementation planning and manual QA evidence
+/plan.md
+/plans/
+/previews-manual/
+/leo-training-*.png
+/dyslexiaaid-*.png
+
+# Local isolated Git worktrees
+/.worktrees/

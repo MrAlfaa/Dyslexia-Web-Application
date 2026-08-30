@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const controller = require("../controllers/speechProcessing.controller");
+const guardianInsightController = require("../controllers/guardianInsight.controller");
 const { uploadSpeechAudio } = require("../middleware/audioUpload.middleware");
 const {
   verifyToken,
@@ -12,6 +13,7 @@ const {
 router.get("/prompts", verifyToken, controller.getPrompts);
 router.get("/my-assignments", verifyToken, controller.getMyAssignments);
 router.get("/child/progress", verifyToken, controller.getChildSpeechProgress);
+router.get("/child/progress-trend", verifyToken, controller.getChildProgressTrend);
 router.get("/identification/status", verifyToken, controller.getIdentificationStatus);
 router.get("/identification/prompts", verifyToken, controller.getIdentificationPrompts);
 router.post("/identification/start", verifyToken, controller.startIdentification);
@@ -42,7 +44,7 @@ router.post(
 router.get("/system-activities", verifyToken, controller.getSystemActivities);
 router.get("/recommendations/:childId", verifyToken, controller.getRecommendations);
 router.post("/session/start", verifyToken, controller.startSession);
-router.post("/attempt/analyze", verifyToken, controller.analyzeAttempt);
+router.post("/attempt/analyze", verifyToken, uploadSpeechAudio, controller.analyzeAttempt);
 router.post(
   "/attempt/upload",
   verifyToken,
@@ -80,6 +82,30 @@ router.get(
   verifyToken,
   isAdmin,
   controller.getGuardianSessionHistory
+);
+router.get(
+  "/guardian/progress-comparison/:childId",
+  verifyToken,
+  isAdmin,
+  controller.getGuardianProgressComparison
+);
+router.get(
+  "/guardian/checkpoints/:childId",
+  verifyToken,
+  isAdmin,
+  controller.getGuardianCheckpoints
+);
+router.get(
+  "/guardian/insight/:childId",
+  verifyToken,
+  isAdmin,
+  guardianInsightController.getGuardianInsight
+);
+router.post(
+  "/guardian/insight/:childId/refresh",
+  verifyToken,
+  isAdmin,
+  guardianInsightController.refreshGuardianInsight
 );
 router.get(
   "/guardian/activity-plan/:childId",
@@ -143,6 +169,36 @@ router.get(
   isSuperAdmin,
   controller.getAttemptPronunciationModel
 );
+router.post(
+  "/admin/attempts/:attemptId/media-sync",
+  verifyToken,
+  isSuperAdmin,
+  controller.retryAttemptMediaSync
+);
+router.post(
+  "/admin/attempts/:attemptId/reprocess-analysis",
+  verifyToken,
+  isSuperAdmin,
+  controller.reprocessAttemptAnalysis
+);
+router.post(
+  "/admin/assessments/recompute/:sessionId",
+  verifyToken,
+  isSuperAdmin,
+  controller.recomputeAssessmentSnapshots
+);
+router.post(
+  "/admin/assessments/backfill",
+  verifyToken,
+  isSuperAdmin,
+  controller.backfillAssessmentSnapshots
+);
+router.get(
+  "/admin/model-evaluation",
+  verifyToken,
+  isSuperAdmin,
+  controller.getPronunciationModelEvaluation
+);
 
 router.post(
   "/admin/prompts/seed",
@@ -197,6 +253,30 @@ router.get(
   verifyToken,
   isSuperAdmin,
   controller.exportManualLabelsCsv
+);
+router.get(
+  "/admin/export/dataset/attempt-features.csv",
+  verifyToken,
+  isSuperAdmin,
+  controller.exportDatasetAttemptFeaturesCsv
+);
+router.get(
+  "/admin/export/dataset/session-features.csv",
+  verifyToken,
+  isSuperAdmin,
+  controller.exportDatasetSessionFeaturesCsv
+);
+router.get(
+  "/admin/export/dataset/data-collection-template.csv",
+  verifyToken,
+  isSuperAdmin,
+  controller.exportDatasetTemplateCsv
+);
+router.get(
+  "/admin/final-classifier/status",
+  verifyToken,
+  isSuperAdmin,
+  controller.getFinalSpeechClassifierStatus
 );
 
 module.exports = router;

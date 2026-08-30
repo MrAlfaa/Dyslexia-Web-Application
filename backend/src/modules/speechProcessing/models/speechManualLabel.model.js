@@ -57,6 +57,20 @@ const speechManualLabelSchema = new mongoose.Schema(
       min: 1,
       max: 5,
     },
+    speechSupportLabel: {
+      type: String,
+      enum: ["low_support", "medium_support", "high_support", "needs_review"],
+    },
+    labelConfidence: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    labelNotes: {
+      type: String,
+      trim: true,
+    },
+    labelledAt: Date,
     comment: {
       type: String,
       trim: true,

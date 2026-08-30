@@ -11,6 +11,9 @@ const allowedMimeTypes = new Set([
   "audio/wav",
   "audio/x-wav",
   "audio/ogg",
+  "audio/mp4",
+  "audio/m4a",
+  "audio/x-m4a",
 ]);
 
 const extensionByMimeType = {
@@ -20,6 +23,9 @@ const extensionByMimeType = {
   "audio/wav": ".wav",
   "audio/x-wav": ".wav",
   "audio/ogg": ".ogg",
+  "audio/mp4": ".m4a",
+  "audio/m4a": ".m4a",
+  "audio/x-m4a": ".m4a",
 };
 
 const sanitize = (value) =>
@@ -36,7 +42,7 @@ const upload = multer({
     if (!allowedMimeTypes.has(file.mimetype)) {
       return cb(
         new Error(
-          "Invalid audio file type. Allowed types are webm, mp3, wav, and ogg."
+          "Invalid audio file type. Allowed types are webm, mp3, wav, ogg, and m4a."
         )
       );
     }

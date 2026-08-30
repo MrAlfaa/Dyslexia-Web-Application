@@ -1,8 +1,8 @@
 # LexiLand Final Speech Support Model Training Guide
 
 This folder supports research-stage training of a session-level oral-reading and
-pronunciation support classifier. It estimates a support class for educational
-follow-up or dyslexia-risk screening; it does **not** directly diagnose dyslexia
+pronunciation support classifier. It estimates a speech-reading support class for educational
+follow-up and contributes one bounded signal to wider screening; it does **not** diagnose dyslexia
 or replace professional assessment.
 
 ## Package Index
@@ -55,6 +55,34 @@ Review macro F1, balanced accuracy, per-class recall, and the confusion matrix;
 accuracy alone is insufficient for uneven support classes. The script rejects
 dummy rows, direct identifiers, unknown columns, missing participant codes, and
 participant overlap.
+
+The trainer compares a baseline Random Forest with tuned Random Forest, Extra
+Trees, HistGradientBoosting, Gradient Boosting, and a group-calibrated SVM. Its
+deployment gate requires all of the following on the same participant-disjoint
+held-out split:
+
+- macro F1 at least 0.01 above the baseline candidate;
+- every class recall at least 0.40;
+- expected calibration error no worse than the baseline and no more than 0.15.
+
+If the gate fails, artifacts are written to
+`final_speech_support_candidate_artifacts/`, not the deployment folder. Do not
+rename or copy those candidate files into the backend runtime folder.
+
+## Current Prototype Audit
+
+The checked-in pronunciation prototype reports accuracy `0.678125` and macro
+F1 `0.590336`. Those values remain provisional because this repository does not
+contain the original source feature rows, participant/speaker identifiers,
+confusion matrix, per-class metrics, or calibration evidence needed to
+reproduce the split. The backend therefore exposes it as
+`prototype_v1_unverified_split`, and longitudinal trend scoring ignores its raw
+probabilities unless `PRONUNCIATION_MODEL_CALIBRATED=true` is set after a real
+calibration audit.
+
+Do not compare the prototype's `0.590336` macro F1 directly with a model trained
+on local expert labels: the label sources differ. Candidate selection in this
+script uses a same-data, same-split baseline instead.
 
 ## Expected Artifacts
 

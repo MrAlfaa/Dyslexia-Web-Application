@@ -1,7 +1,7 @@
 const supportLabels = {
-  low_support: "Low Support",
-  medium_support: "Medium Support",
-  high_support: "High Support",
+  low_support: "Low support need",
+  medium_support: "Medium support need",
+  high_support: "High support need",
   unknown: "Unknown",
 };
 
@@ -15,7 +15,9 @@ const statusLabels = {
 };
 
 function GuardianStatusBadge({ value, type = "status" }) {
-  const label = type === "support" ? supportLabels[value] || "Unknown" : statusLabels[value] || value || "Unknown";
+  const label = type === "support"
+    ? supportLabels[value] || "Unknown"
+    : statusLabels[value] || formatStatusBadgeLabel(value);
   const tone =
     value === "completed" || value === "low_support"
       ? "bg-[#EAF7F0] text-[#0F5F48] ring-[#CFE9DC]"
@@ -33,3 +35,4 @@ function GuardianStatusBadge({ value, type = "status" }) {
 }
 
 export default GuardianStatusBadge;
+import { formatStatusBadgeLabel } from "./guardianStatusBadge.utils";

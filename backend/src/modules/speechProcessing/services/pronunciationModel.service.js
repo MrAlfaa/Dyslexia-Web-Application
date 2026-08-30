@@ -4,7 +4,14 @@ const { spawn } = require("child_process");
 
 const MODEL_VERSION = "pronunciation_support_v1";
 const MODEL_NAME = "pronunciation_support_classifier";
-const TIMEOUT_MS = 30000;
+const DEFAULT_TIMEOUT_MS = 60000;
+
+const getPredictionTimeoutMs = () => {
+  const configured = Number(process.env.PRONUNCIATION_MODEL_TIMEOUT_MS);
+  return Number.isFinite(configured) && configured >= 1000
+    ? configured
+    : DEFAULT_TIMEOUT_MS;
+};
 
 const backendRoot = path.resolve(__dirname, "../../../../");
 const projectRoot = path.resolve(__dirname, "../../../../../");
@@ -88,7 +95,7 @@ const runPython = ({ pythonBin, audioPath, modelDir }) =>
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill("SIGKILL");
-    }, TIMEOUT_MS);
+    }, getPredictionTimeoutMs());
 
     child.stdout.on("data", (chunk) => {
       stdout += chunk.toString();
@@ -177,6 +184,7 @@ const predictPronunciationSupport = async ({ normalizedAudioPath, validAudio } =
 module.exports = {
   MODEL_NAME,
   MODEL_VERSION,
+  getPredictionTimeoutMs,
   predictPronunciationSupport,
   resolveArtifactDir,
 };

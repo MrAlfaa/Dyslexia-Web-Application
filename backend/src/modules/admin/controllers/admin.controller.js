@@ -302,7 +302,7 @@ exports.updateStudentScoped = async (req, res) => {
     });
 
     const updatedStudent = await Student.findByIdAndUpdate(id, safeUpdate, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     }).select("-password");
     
@@ -323,7 +323,7 @@ exports.deactivateStudent = async (req, res) => {
     const deletedStudent = await Student.findOneAndUpdate(
       { _id: id, ...getChildScope(req) },
       { accountStatus: "inactive" },
-      { new: true }
+      { returnDocument: "after" }
     ).select("-password");
     
     if (!deletedStudent) {

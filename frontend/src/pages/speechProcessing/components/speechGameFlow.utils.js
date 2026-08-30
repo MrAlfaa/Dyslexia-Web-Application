@@ -1,5 +1,12 @@
 export const GUARDIAN_SPEECH_CHILD_KEY = "lexilandGuardianSpeechChildId";
 
+export const claimSessionStart = (startRef, activityId) => {
+  const key = String(activityId || "").trim();
+  if (!startRef || !key || startRef.current === key) return false;
+  startRef.current = key;
+  return true;
+};
+
 export const canPlayTargetAudio = ({ mode, attemptPhase, activityId, taskType } = {}) =>
   mode === "improvement" &&
   attemptPhase === "training" &&

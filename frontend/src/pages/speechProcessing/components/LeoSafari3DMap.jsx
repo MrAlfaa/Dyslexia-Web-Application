@@ -1,12 +1,14 @@
-import { Component, Suspense, useMemo } from "react";
-import { Billboard, useTexture } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Component, useMemo } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import leoImage from "../../../assets/lexiland/leo-lion.webp";
 import LeoSafariCheckpointShrine from "./LeoSafariCheckpointShrine";
 import LeoSafariTerrain from "./LeoSafariTerrain";
 import LeoSafariZone from "./LeoSafariZone";
-import { getSafariRenderSettings } from "./leoSafariPerformance.utils";
+import ProceduralLeo3D from "./ProceduralLeo3D";
+import {
+  getLeoGuideOffset,
+  getSafariRenderSettings,
+} from "./leoSafariPerformance.utils";
 
 const SAFARI_ZONE_LAYOUT = [
   { activityId: "leo_first_sound_hunt", position: [-5.2, 0.18, 2.5] },
@@ -72,25 +74,13 @@ function GuidedCamera({ focusedActivityId, paused, quality }) {
   return null;
 }
 
-function LeoBillboard({ position }) {
-  const texture = useTexture(leoImage);
-
-  return (
-    <Billboard position={position} follow lockX={false} lockY={false} lockZ={false}>
-      <mesh position={[0, 1.25, 0]} renderOrder={3}>
-        <planeGeometry args={[1.75, 2.5]} />
-        <meshBasicMaterial map={texture} transparent alphaTest={0.08} toneMapped={false} />
-      </mesh>
-    </Billboard>
-  );
-}
-
 function SafariScene({ zones, focusedActivityId, active, recording, quality, effects }) {
   const completedCount = zones.filter((zone) => zone.state === "replay").length;
+  const viewportWidth = useThree((state) => state.size.width);
   const leoPosition = useMemo(() => {
     const focused = ZONE_POSITIONS.get(focusedActivityId) || SAFARI_ZONE_LAYOUT[0].position;
-    return [focused[0] - 1.4, 0.1, focused[2] + 0.95];
-  }, [focusedActivityId]);
+    return [focused[0] + getLeoGuideOffset(viewportWidth), 0.1, focused[2] + 0.95];
+  }, [focusedActivityId, viewportWidth]);
 
   return (
     <>
@@ -142,9 +132,12 @@ function SafariScene({ zones, focusedActivityId, active, recording, quality, eff
         />
       ))}
 
-      <Suspense fallback={null}>
-        <LeoBillboard position={leoPosition} />
-      </Suspense>
+      <ProceduralLeo3D
+        position={leoPosition}
+        active={active}
+        recording={recording}
+        quality={quality}
+      />
     </>
   );
 }
@@ -172,7 +165,7 @@ function LeoSafari3DMap({
           antialias: true,
           powerPreference: "high-performance",
         }}
-        shadows={renderSettings.shadows}
+        shadows={renderSettings.shadows ? "basic" : false}
       >
         <SafariScene
           zones={zones}

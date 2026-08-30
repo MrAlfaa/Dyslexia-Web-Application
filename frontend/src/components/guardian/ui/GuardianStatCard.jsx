@@ -7,12 +7,12 @@ function GuardianStatCard({ label, value, helper, tone = "emerald" }) {
   };
 
   return (
-    <article className={`min-h-[116px] rounded-[10px] p-4 ${tones[tone] || tones.emerald}`}>
-      <p className="text-sm font-semibold text-[#475467]">
+    <article className={`min-h-[96px] rounded-lg border border-black/[0.035] p-3.5 ${tones[tone] || tones.emerald}`}>
+      <p className="text-xs font-semibold text-[#475467]">
         {label}
       </p>
-      <div className="mt-2 break-words text-[22px] font-bold leading-tight text-[#101828]">{value}</div>
-      {helper && <p className="mt-1.5 text-sm font-normal leading-5 text-[#5B6475]">{helper}</p>}
+      <div className="mt-1.5 break-words text-lg font-bold leading-tight text-[#101828]">{value}</div>
+      {helper && <p className="mt-1 text-xs font-normal leading-[18px] text-[#5B6475]">{helper}</p>}
     </article>
   );
 }

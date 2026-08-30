@@ -135,7 +135,7 @@ const repairChildOwnership = async ({ childId, destinationGuardianId }) => {
   const updatedChild = await Student.findOneAndUpdate(
     { _id: childId },
     { $set: { guardianId: destinationGuardianId, createdByAdmin: destinationGuardianId } },
-    { new: true, runValidators: true },
+    { returnDocument: "after", runValidators: true },
   ).select("-password");
 
   if (!updatedChild) {

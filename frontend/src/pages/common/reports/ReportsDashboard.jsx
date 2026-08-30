@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 function ReportsDashboard() {
   const navigate = useNavigate();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation("common");
 
   const components = [
     {
@@ -12,7 +12,7 @@ function ReportsDashboard() {
       image: "/images/1.png",
       description: t("pa_desc"),
       color: "from-blue-400 to-indigo-500",
-      icon: "🎵",
+      icon: "PA",
     },
     {
       id: "wm",
@@ -20,7 +20,7 @@ function ReportsDashboard() {
       image: "/images/4.png",
       description: t("wm_desc"),
       color: "from-purple-400 to-pink-500",
-      icon: "🧠",
+      icon: "WM",
     },
     {
       id: "rp",
@@ -28,7 +28,7 @@ function ReportsDashboard() {
       image: "/images/2.png",
       description: t("rp_desc"),
       color: "from-amber-300 to-orange-500",
-      icon: "📚",
+      icon: "RP",
     },
     {
       id: "sp",
@@ -36,83 +36,70 @@ function ReportsDashboard() {
       image: "/images/3.png",
       description: t("sp_desc"),
       color: "from-emerald-400 to-teal-600",
-      icon: "🗣️",
+      icon: "SP",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-300 via-sky-200 to-white p-8 relative overflow-hidden">
-      {/* Dashboard Button */}
-      <div className="absolute top-8 right-8 z-50 flex items-center gap-4">
-        <button 
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-sky-300 via-sky-200 to-white p-8">
+      <div className="absolute right-8 top-8 z-50">
+        <button
           onClick={() => navigate("/dashboard")}
-          className="bg-white hover:bg-sky-50 text-sky-600 font-black px-8 py-3 rounded-full shadow-lg border-2 border-white/80 transition-all hover:-translate-y-1 active:translate-y-0 active:shadow-none uppercase tracking-widest text-sm"
+          className="rounded-full border-2 border-white/80 bg-white px-8 py-3 text-sm font-black uppercase tracking-widest text-sky-600 shadow-lg transition-all hover:-translate-y-1 hover:bg-sky-50 active:translate-y-0 active:shadow-none"
         >
-          {t("dashboard")} 🏠
+          {t("dashboard")}
         </button>
       </div>
 
-      {/* Decorative Background Elements */}
-      <div className="absolute top-10 left-10 w-32 h-32 bg-white/40 rounded-full blur-2xl animate-pulse"></div>
-      <div className="absolute top-40 right-20 w-48 h-48 bg-yellow-100/50 rounded-full blur-3xl animate-pulse delay-700"></div>
-      <div className="absolute bottom-20 left-1/4 w-64 h-64 bg-pink-100/40 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      
-      {/* Floating Emojis */}
-      <div className="absolute top-20 right-[15%] text-4xl animate-bounce opacity-40">🎈</div>
-      <div className="absolute bottom-40 left-[10%] text-4xl animate-bounce delay-300 opacity-40">🌟</div>
-      <div className="absolute top-[40%] right-[5%] text-4xl animate-bounce delay-700 opacity-30">☁️</div>
+      <div className="absolute left-10 top-10 h-32 w-32 rounded-full bg-white/40 blur-2xl"></div>
+      <div className="absolute right-20 top-40 h-48 w-48 rounded-full bg-yellow-100/50 blur-3xl"></div>
+      <div className="absolute bottom-20 left-1/4 h-64 w-64 rounded-full bg-pink-100/40 blur-3xl"></div>
 
-      <div className="max-w-7xl mx-auto relative z-10">
-          <div className="w-full text-center">
-            <h1 className="text-5xl font-black text-slate-800 tracking-tight drop-shadow-sm inline-block">{t("my_game_reports")}</h1>
-            <p className="text-sky-700/60 font-black uppercase tracking-widest text-sm mt-1">{t("see_stars_earned")}</p>
-          </div>
-        <br />
-        <br />
+      <div className="relative z-10 mx-auto max-w-7xl">
+        <div className="w-full text-center">
+          <h1 className="inline-block text-5xl font-black tracking-tight text-slate-800 drop-shadow-sm">
+            {t("my_game_reports")}
+          </h1>
+          <p className="mt-2 text-sm font-black uppercase tracking-widest text-sky-700/60">
+            {t("see_stars_earned")}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {components.map((comp) => (
             <div
               key={comp.id}
-              onClick={() => navigate(`/reports/${comp.id}`)}
-              className="group cursor-pointer bg-white rounded-[3rem] shadow-[0_20px_0_rgba(0,0,0,0.05)] hover:shadow-[0_30px_0_rgba(0,0,0,0.08)] transition-all duration-300 overflow-hidden border-2 border-white/50 transform hover:-translate-y-4 active:translate-y-2 active:shadow-none"
+              onClick={() => navigate(comp.id === "sp" ? "/speech-processing" : `/reports/${comp.id}`)}
+              className="group cursor-pointer overflow-hidden rounded-[3rem] border-2 border-white/50 bg-white shadow-[0_20px_0_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-4 hover:shadow-[0_30px_0_rgba(0,0,0,0.08)] active:translate-y-2 active:shadow-none"
             >
-              <div className={`h-44 bg-gradient-to-br ${comp.color} flex items-center justify-center p-8 relative`}>
-                <div className="absolute top-4 right-4 text-3xl opacity-30 group-hover:scale-125 transition-transform">{comp.icon}</div>
+              <div className={`relative flex h-44 items-center justify-center bg-gradient-to-br ${comp.color} p-8`}>
+                <div className="absolute right-4 top-4 rounded-full bg-white/20 px-3 py-2 text-xs font-black text-white">
+                  {comp.icon}
+                </div>
                 <img
                   src={comp.image}
                   alt={comp.title}
-                  className="w-full h-full object-contain drop-shadow-xl group-hover:scale-110 transition duration-500"
+                  className="h-full w-full object-contain drop-shadow-xl transition duration-500 group-hover:scale-110"
                 />
               </div>
 
-              <div className="p-8 text-center bg-white">
-                <h2 className="text-2xl font-black text-slate-800 group-hover:text-sky-600 transition-colors leading-tight mb-3">
+              <div className="bg-white p-8 text-center">
+                <h2 className="mb-3 text-2xl font-black leading-tight text-slate-800 transition-colors group-hover:text-sky-600">
                   {comp.title}
                 </h2>
-                <div className="w-12 h-1.5 bg-slate-100 mx-auto rounded-full mb-4 group-hover:w-20 group-hover:bg-sky-400 transition-all"></div>
-                <p className="text-slate-400 text-sm font-bold leading-relaxed">{comp.description}</p>
+                <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-100 transition-all group-hover:w-20 group-hover:bg-sky-400"></div>
+                <p className="text-sm font-bold leading-relaxed text-slate-400">{comp.description}</p>
               </div>
             </div>
           ))}
         </div>
 
         <div className="mt-20 text-center">
-           <div className="inline-block bg-white/50 backdrop-blur-md px-10 py-4 rounded-full border-2 border-white/80 shadow-lg">
-             <p className="text-sky-800 font-black uppercase tracking-[0.3em] text-sm">{t("doing_amazing")}</p>
-           </div>
+          <div className="inline-block rounded-full border-2 border-white/80 bg-white/50 px-10 py-4 shadow-lg backdrop-blur-md">
+            <p className="text-sm font-black uppercase tracking-[0.3em] text-sky-800">{t("doing_amazing")}</p>
+          </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes whistle {
-          0%, 100% { transform: translateY(0) rotate(0); }
-          50% { transform: translateY(-10px) rotate(5deg); }
-        }
-        .animate-whistle {
-          animation: whistle 3s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

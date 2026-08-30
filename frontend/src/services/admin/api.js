@@ -108,6 +108,18 @@ export const getGuardianSpeechImprovementProgress = (childId) =>
 export const getGuardianSpeechSessionHistory = (childId) =>
   AdminAPI.get(`/speech-processing/guardian/session-history/${childId}`);
 
+export const getGuardianSpeechProgressComparison = (childId) =>
+  AdminAPI.get(`/speech-processing/guardian/progress-comparison/${childId}`);
+
+export const getGuardianSpeechCheckpoints = (childId) =>
+  AdminAPI.get(`/speech-processing/guardian/checkpoints/${childId}`);
+
+export const getGuardianSpeechInsight = (childId, locale = "si-LK") =>
+  AdminAPI.get(`/speech-processing/guardian/insight/${childId}`, { params: { locale } });
+
+export const refreshGuardianSpeechInsight = (childId, locale = "si-LK") =>
+  AdminAPI.post(`/speech-processing/guardian/insight/${childId}/refresh`, null, { params: { locale } });
+
 export const getGuardianSpeechActivityPlan = (childId) =>
   AdminAPI.get(`/speech-processing/guardian/activity-plan/${childId}`);
 
@@ -131,6 +143,18 @@ export const getUnlabeledSpeechAttempts = () =>
 
 export const getAttemptPronunciationModel = (attemptId) =>
   AdminAPI.get(`/speech-processing/admin/attempts/${attemptId}/pronunciation-model`);
+
+export const reprocessSpeechAttemptAnalysis = (attemptId) =>
+  AdminAPI.post(`/speech-processing/admin/attempts/${attemptId}/reprocess-analysis`);
+
+export const recomputeSpeechAssessment = (sessionId) =>
+  AdminAPI.post(`/speech-processing/admin/assessments/recompute/${sessionId}`);
+
+export const backfillSpeechAssessments = (limit = 100) =>
+  AdminAPI.post("/speech-processing/admin/assessments/backfill", { limit });
+
+export const getPronunciationModelEvaluation = () =>
+  AdminAPI.get("/speech-processing/admin/model-evaluation");
 
 export const getSpeechPromptBank = () =>
   AdminAPI.get("/speech-processing/admin/prompts");

@@ -18,6 +18,7 @@ import {
   canAttemptProgress,
   canPlayTargetAudio,
   canSubmitLeoPrompt,
+  claimSessionStart,
   createSubmissionFailureFeedback,
   getSubmissionFailurePresentation,
 } from "./speechGameFlow.utils";
@@ -102,6 +103,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
   const [gameStarted, setGameStarted] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const advanceTimerRef = useRef(null);
+  const sessionStartRef = useRef("");
   const sounds = useLeoSoundEffects();
 
   const prompt = prompts[index];
@@ -135,6 +137,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
     : feedback;
 
   useEffect(() => {
+    if (!claimSessionStart(sessionStartRef, activity.activityId)) return;
     const start = async () => {
       setLoading(true);
       setError("");
@@ -167,6 +170,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
         setCheckpointDue(Boolean(data.checkpointDue && nextCheckpointPrompts.length));
         setCheckpointSequence(Number(data.checkpointSequence || 0));
       } catch (err) {
+        sessionStartRef.current = "";
         const data = err.response?.data || {};
         if (err.response?.status === 403 && data.code === "activity_locked") {
           onLocked?.(data.lockReason || data.message);
@@ -491,7 +495,7 @@ function LeoActivityPlay({ activity, onComplete, onCancel, onLocked }) {
               </div>
             </div>
             <div
-              className={`min-h-[16rem] ${isRecording ? "pointer-events-none [&_*]:[animation-play-state:paused!important]" : ""}`}
+              className={`min-h-[16rem] ${isRecording ? "recording-animations-paused pointer-events-none" : ""}`}
               data-map-active={String(!isRecording)}
               aria-hidden={isRecording}
               inert={isRecording || undefined}

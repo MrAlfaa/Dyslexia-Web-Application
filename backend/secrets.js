@@ -1,5 +1,4 @@
+// Example only. Keep real secrets in backend/.env or deployment secret storage.
 // PORT=5000
-
-// MONGO_URI=mongodb+srv://mandiradew25_db_user:exBu9gFQzVNrXJk5@cluster0.ru9tlvz.mongodb.net/?appName=Cluster0
-
-// JWT_SECRET=supersecretkey123
+// MONGO_URI=mongodb+srv://<username>:<password>@<cluster-host>/<database>
+// JWT_SECRET=<replace_with_secure_secret>

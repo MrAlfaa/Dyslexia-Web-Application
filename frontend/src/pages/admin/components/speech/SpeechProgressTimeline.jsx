@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import GuardianStatusBadge from "../../../../components/guardian/ui/GuardianStatusBadge";
 import { getSentenceDeltaDetails } from "./SpeechProgressTimeline.utils";
 
 const toneByStatus = {
@@ -160,6 +161,11 @@ function SpeechProgressTimeline({ baseline, activityEstimates = [], checkpoints 
                   {snapshot.createdAt ? new Date(snapshot.createdAt).toLocaleDateString(i18n.resolvedLanguage) : ""}
                 </p>
               </div>
+              {snapshot.kind !== "activity_estimate" && snapshot.supportLevel && (
+                <div className="mt-2">
+                  <GuardianStatusBadge value={snapshot.supportLevel} type="support" />
+                </div>
+              )}
               <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-4">
                 <span>{t("guardian_word_accuracy")} <strong>{formatPercent(snapshot.metrics?.wordAccuracy)}</strong></span>
                 <span>{t("guardian_similarity")} <strong>{formatPercent(snapshot.metrics?.meanSimilarityScore)}</strong></span>

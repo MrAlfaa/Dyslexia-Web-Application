@@ -115,6 +115,19 @@ const installDataStubs = ({ superAdmin = false } = {}) => {
   };
 };
 
+test("guardian history filtering omits abandoned zero-attempt sessions", () => {
+  const completed = { _id: "completed-1", status: "completed" };
+  const active = { _id: "active-1", status: "in_progress" };
+  const abandoned = { _id: "abandoned-1", status: "in_progress" };
+
+  const visible = controller.filterGuardianHistorySessions(
+    [completed, active, abandoned],
+    { "active-1": [{ _id: "attempt-1" }] }
+  );
+
+  assert.deepEqual(visible, [completed, active]);
+});
+
 test("guardian history capability is false and its payload excludes technical evidence", async () => {
   const restore = installDataStubs();
   try {

@@ -1,7 +1,7 @@
 function GuardianCard({ children, className = "" }) {
   return (
     <section
-      className={`rounded-xl border border-[#E2E8E4] bg-white p-5 shadow-[0_8px_24px_rgba(16,36,30,0.055)] md:p-6 ${className}`}
+      className={`rounded-lg border border-[#DCE5E0] bg-white p-4 shadow-[0_4px_14px_rgba(16,36,30,0.045)] md:p-5 ${className}`}
     >
       {children}
     </section>

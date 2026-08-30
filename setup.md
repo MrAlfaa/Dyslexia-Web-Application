@@ -55,11 +55,48 @@ Optional Speech Processing variables:
 
 ```env
 PYTHON_BIN=E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\.venv\Scripts\python.exe
-LEXILAND_PRONUNCIATION_MODEL_DIR=E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\ML_Model\lexiland_pronunciation_support_model_artifacts
+LEXILAND_PRONUNCIATION_MODEL_DIR=E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\ML_Model\lexiland_pronunciation_support_model_artifacts\model_artifacts
+PRONUNCIATION_MODEL_CALIBRATED=false
 LEXILAND_DEV_UNLOCK=true
 ```
 
 `LEXILAND_DEV_UNLOCK=true` is only for local testing of Leo's Training Safari. Do not use it as a production rule.
+
+Keep `PRONUNCIATION_MODEL_CALIBRATED=false` until a speaker-disjoint calibration
+audit has been reproduced. With this value, the backend stores model estimates
+but excludes raw probabilities from longitudinal support-need scoring.
+
+After deploying the versioned speech-assessment schema to an existing database,
+run the index migration once:
+
+```powershell
+cd backend
+npm.cmd run migrate:speech-snapshots
+```
+
+Optional media storage and performance variables:
+
+```env
+MEDIA_STORAGE_PROVIDER=local
+CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
+CLOUDINARY_FOLDER=lexiland/speech
+SPEECH_BACKGROUND_PROCESSING=true
+SPEECH_ASR_SYNC_MODE=background
+```
+
+Use `MEDIA_STORAGE_PROVIDER=cloudinary` only after adding valid Cloudinary credentials through environment variables. Do not commit real Cloudinary API secrets. If a secret was shared in chat, logs, or screenshots, rotate it before production.
+
+Optional Ollama Cloud guardian guide variables:
+
+```env
+OLLAMA_CLOUD_ENABLED=false
+OLLAMA_API_KEY=<rotated_api_key>
+OLLAMA_BASE_URL=https://ollama.com/api
+OLLAMA_MODEL=gpt-oss:20b
+OLLAMA_TIMEOUT_MS=15000
+```
+
+The Ollama integration receives only de-identified aggregate speech-reading metrics. It does not receive child names, usernames, school details, audio, transcripts, storage URLs, or model probabilities. If Ollama is disabled, unavailable, or returns invalid output, the Guardian Console continues with a deterministic learning-support guide. Never commit an Ollama API key. Rotate any key exposed in chat, screenshots, or logs before using it in production.
 
 ## 4. Frontend Environment File
 
@@ -106,6 +143,20 @@ python -m pip install -r backend/src/modules/speechProcessing/ml/requirements.tx
 ```
 
 If `py -3.10` is not available, install Python 3.10, 3.11, or 3.12 and recreate the `.venv`.
+
+Download the small English Whisper model once during setup. Runtime transcription uses the local cache so a child attempt does not wait for a network model lookup.
+
+PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -c "from faster_whisper import WhisperModel; WhisperModel('tiny.en', device='cpu', compute_type='int8')"
+```
+
+Git Bash:
+
+```bash
+.venv/Scripts/python.exe -c "from faster_whisper import WhisperModel; WhisperModel('tiny.en', device='cpu', compute_type='int8')"
+```
 
 ## 6. Install Backend Dependencies
 
@@ -317,4 +368,3 @@ npm.cmd audit
 ```
 
 Do not run forced dependency upgrades without checking for React/Vite breaking changes.
-

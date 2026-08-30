@@ -316,7 +316,7 @@ test("ownership repair updates both ownership fields atomically and omits passwo
     assert.deepEqual(capturedWrite, {
       filter: { _id: childId },
       update: { $set: { guardianId, createdByAdmin: guardianId } },
-      options: { new: true, runValidators: true },
+      options: { returnDocument: "after", runValidators: true },
     });
     assert.equal(Object.hasOwn(result.child, "password"), false);
     assert.equal(result.destination.email, undefined);
