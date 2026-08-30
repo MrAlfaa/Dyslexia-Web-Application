@@ -42,6 +42,7 @@ const {
 } = require("../services/leoActivityRecommendation.service");
 const { getLeoActivityAccess } = require("../services/leoActivityAccess.service");
 const {
+  getAdvancingWordFeedback,
   getLeoAttemptProgress,
   isSuccessfulLeoAttempt,
   shouldAwaitImprovementReadingEvidence,
@@ -3115,6 +3116,11 @@ exports.submitImprovementAttempt = async (req, res) => {
       wordReading,
       sentenceReading,
     });
+    const advancingWordFeedback = getAdvancingWordFeedback({
+      isSelection,
+      attemptProgress,
+      wordReading,
+    });
     const needsRecognizableSpeechRetry = Boolean(
       !isSelection && features.validAudio && attemptProgress.retryRequired
     );
@@ -3128,6 +3134,8 @@ exports.submitImprovementAttempt = async (req, res) => {
       : baseSentenceFeedback;
     const childFeedback = needsRecognizableSpeechRetry
       ? speechRetryMessage
+      : advancingWordFeedback?.childFeedback
+        ? advancingWordFeedback.childFeedback
       : features.validAudio
       ? sentenceFeedback?.message || wordFeedback ||
         (features.wordCorrectPlaceholder
@@ -3140,6 +3148,8 @@ exports.submitImprovementAttempt = async (req, res) => {
       : getInvalidAudioChildFeedback(features.invalidReason);
     const leoMessage = needsRecognizableSpeechRetry
       ? speechRetryMessage
+      : advancingWordFeedback?.leoMessage
+        ? advancingWordFeedback.leoMessage
       : sentenceFeedback?.message || (features.wordCorrectPlaceholder
       ? "You found a sound gem."
       : features.validAudio

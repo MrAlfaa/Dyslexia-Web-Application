@@ -58,7 +58,30 @@ const getLeoAttemptProgress = ({
   };
 };
 
+const getAdvancingWordFeedback = ({
+  isSelection,
+  attemptProgress,
+  wordReading,
+} = {}) => {
+  const advancing =
+    isSelection === false &&
+    attemptProgress?.levelCompleted === true &&
+    attemptProgress?.nextPromptUnlocked === true &&
+    attemptProgress?.retryRequired !== true &&
+    wordReading?.attemptStatus === "valid";
+
+  if (!advancing) return null;
+
+  return {
+    childFeedback: wordReading.wordCorrect
+      ? "Great roar! Leo heard the word clearly."
+      : "Great roar! Leo heard you. Let's move to the next word.",
+    leoMessage: "You unlocked the next jungle step.",
+  };
+};
+
 module.exports = {
+  getAdvancingWordFeedback,
   getLeoAttemptProgress,
   hasRecognizableSpeech,
   isSuccessfulLeoAttempt,

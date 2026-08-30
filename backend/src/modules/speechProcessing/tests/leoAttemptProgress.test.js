@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const {
+  getAdvancingWordFeedback,
   getLeoAttemptProgress,
   shouldAwaitImprovementReadingEvidence,
 } = require("../services/leoAttemptProgress.service");
@@ -96,6 +97,43 @@ test("a word recording advances after ASR recognizes spoken text", () => {
       nextPromptUnlocked: true,
       levelState: "completed",
     }
+  );
+});
+
+test("an advancing word attempt never presents retry wording when ASR heard a different word", () => {
+  assert.deepEqual(
+    getAdvancingWordFeedback({
+      isSelection: false,
+      attemptProgress: {
+        levelCompleted: true,
+        nextPromptUnlocked: true,
+        retryRequired: false,
+      },
+      wordReading: {
+        attemptStatus: "valid",
+        asrText: "Boom!",
+        wordCorrect: false,
+      },
+    }),
+    {
+      childFeedback: "Great roar! Leo heard you. Let's move to the next word.",
+      leoMessage: "You unlocked the next jungle step.",
+    }
+  );
+});
+
+test("a retry attempt does not receive advancing feedback", () => {
+  assert.equal(
+    getAdvancingWordFeedback({
+      isSelection: false,
+      attemptProgress: {
+        levelCompleted: false,
+        nextPromptUnlocked: false,
+        retryRequired: true,
+      },
+      wordReading: { attemptStatus: "asr_empty", asrText: "" },
+    }),
+    null
   );
 });
 
