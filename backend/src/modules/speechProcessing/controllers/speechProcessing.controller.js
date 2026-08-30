@@ -915,7 +915,11 @@ const getInitialReadingTask = ({ taskType, targetText, targetWord, features }) =
   });
 };
 
-const analyzeSavedAudio = async (savedFile, frontendAudioDurationMs) => {
+const analyzeSavedAudio = async (
+  savedFile,
+  frontendAudioDurationMs,
+  { taskType, targetText } = {}
+) => {
   if (!savedFile?.path) return null;
   return analyzeAudio({
     filePath: savedFile.path,
@@ -923,6 +927,8 @@ const analyzeSavedAudio = async (savedFile, frontendAudioDurationMs) => {
       frontendAudioDurationMs !== undefined && frontendAudioDurationMs !== ""
         ? Number(frontendAudioDurationMs)
         : undefined,
+    taskType,
+    targetText,
   });
 };
 
@@ -1440,7 +1446,10 @@ const buildAttemptFromUpload = async ({
     promptId,
     attemptNo,
   });
-  const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs);
+  const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs, {
+    taskType,
+    targetText,
+  });
   const observedAudioDurationMs = getObservedAudioDurationMs(audioAnalysis, audioDurationMs);
 
   const features = extractPlaceholderFeatures({
@@ -1787,7 +1796,10 @@ exports.analyzeAttempt = async (req, res) => {
       promptId: currentPromptId,
       attemptNo: currentAttemptNo,
     });
-    const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs);
+    const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs, {
+      taskType: resolvedTaskType,
+      targetText: resolvedTargetText || resolvedTargetWord,
+    });
     const observedAudioDurationMs = getObservedAudioDurationMs(audioAnalysis, audioDurationMs);
     const features = extractPlaceholderFeatures({
       file: savedFile,
@@ -2281,7 +2293,12 @@ exports.submitIdentificationAttempt = async (req, res) => {
       promptId,
       attemptNo,
     });
-    const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs);
+    const resolvedTaskType = taskType || prompt.taskType;
+    const resolvedTargetText = targetText || prompt.targetText;
+    const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs, {
+      taskType: resolvedTaskType,
+      targetText: resolvedTargetText,
+    });
     const observedAudioDurationMs = getObservedAudioDurationMs(audioAnalysis, audioDurationMs);
     const allowPlaceholderAudio = canUsePlaceholderAudio({
       nodeEnv: process.env.NODE_ENV,
@@ -2298,9 +2315,9 @@ exports.submitIdentificationAttempt = async (req, res) => {
       audioAnalysis,
       audioDurationMs,
       attemptNo,
-      taskType: taskType || prompt.taskType,
+      taskType: resolvedTaskType,
       promptId,
-      targetText: targetText || prompt.targetText,
+      targetText: resolvedTargetText,
       targetPhonemes: parseJsonArray(req.body.targetPhonemes).length
         ? parseJsonArray(req.body.targetPhonemes)
         : prompt.targetPhonemes,
@@ -2309,8 +2326,6 @@ exports.submitIdentificationAttempt = async (req, res) => {
       allowPlaceholderAudio,
     });
     const itemResult = createItemResult(features);
-    const resolvedTaskType = taskType || prompt.taskType;
-    const resolvedTargetText = targetText || prompt.targetText;
     const targetWord = getSafeTargetWord(req.body.targetWord, resolvedTargetText);
     const runPronunciation = shouldRunPronunciationModel({
       taskType: resolvedTaskType,
@@ -2991,7 +3006,10 @@ exports.submitImprovementAttempt = async (req, res) => {
       promptId,
       attemptNo,
     });
-    const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs);
+    const audioAnalysis = await analyzeSavedAudio(savedFile, audioDurationMs, {
+      taskType: resolvedTaskType,
+      targetText: resolvedTargetText,
+    });
     const observedAudioDurationMs = getObservedAudioDurationMs(audioAnalysis, audioDurationMs);
     const allowPlaceholderAudio = canUsePlaceholderAudio({
       nodeEnv: process.env.NODE_ENV,

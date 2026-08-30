@@ -45,6 +45,12 @@ const latestPerPrompt = (attempts) => {
   return [...map.values()];
 };
 
+const hasRecognizableReadingEvidence = (attempt) => {
+  if (attempt.wordReading) return attempt.wordReading.attemptStatus === "valid";
+  if (attempt.sentenceReading) return attempt.sentenceReading.status === "valid";
+  return true;
+};
+
 const aggregateAssessmentEvidence = (attempts = [], options = {}) => {
   const totalAttemptCount = attempts.length;
   const validAttempts = attempts.filter((attempt) => attempt.validAudio);
@@ -56,6 +62,7 @@ const aggregateAssessmentEvidence = (attempts = [], options = {}) => {
     validAttempts.filter(
       (attempt) =>
         attempt.taskType !== "paragraph_segment_read" &&
+        hasRecognizableReadingEvidence(attempt) &&
         attempt.pronunciationModel?.status === "success"
     )
   );

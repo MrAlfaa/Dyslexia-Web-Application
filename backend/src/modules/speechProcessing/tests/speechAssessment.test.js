@@ -141,6 +141,22 @@ test("missing sentence evidence remains null", () => {
   assert.equal(result.metrics.meanSentenceWordsPerMinute, null);
 });
 
+test("audio admitted for ASR does not influence support classification when speech is unrecognized", () => {
+  const unrecognized = attempt({ promptId: "borderline-word" });
+  unrecognized.wordReading = {
+    attemptStatus: "asr_empty",
+    asrText: "",
+    normalizedAsrText: "",
+  };
+
+  const result = aggregateAssessmentEvidence([unrecognized]);
+
+  assert.equal(result.validAttemptCount, 1);
+  assert.equal(result.validModelPredictionCount, 0);
+  assert.equal(result.supportLevel, "unknown");
+  assert.equal(result.status, "insufficient_data");
+});
+
 test("assessment snapshot requires enough valid audio and model predictions", () => {
   const result = buildAssessmentSnapshot({
     attempts: [attempt(), attempt({ validAudio: false })],

@@ -18,6 +18,18 @@ const round = (value, digits = 3) => {
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
+const SINGLE_WORD_TASK_TYPES = new Set([
+  "listen_repeat",
+  "read_aloud_word",
+  "pseudoword_read",
+  "minimal_pair_read",
+]);
+const MIN_SINGLE_WORD_SPEECH_SEC = 0.15;
+
+const isSingleWordTask = ({ taskType, targetText } = {}) =>
+  SINGLE_WORD_TASK_TYPES.has(String(taskType || "").trim()) &&
+  String(targetText || "").trim().split(/\s+/).filter(Boolean).length === 1;
+
 const runBinary = (binary, args, options = {}) =>
   new Promise((resolve, reject) => {
     execFile(
@@ -249,6 +261,8 @@ const computeAudioQualityScore = ({
   silenceFeatures,
   durationMismatchMs,
   analysisError,
+  taskType,
+  targetText,
 }) => {
   const warnings = [];
   const baseInvalidReason = analysisError || getBaseInvalidReason(audioMetadata);
@@ -262,11 +276,16 @@ const computeAudioQualityScore = ({
       (volumeFeatures?.maxVolumeDb !== undefined && volumeFeatures.maxVolumeDb > -0.5)
   );
   const mostlySilence = Number(silenceFeatures?.silenceRatio || 0) > 0.85;
-  const noSpeech = silenceFeatures && !silenceFeatures.hasSpeech;
+  const shortWordTask = isSingleWordTask({ taskType, targetText });
+  const estimatedSpeechSec = Number(silenceFeatures?.estimatedSpeechSec || 0);
+  const hasTaskAppropriateSpeech = shortWordTask
+    ? estimatedSpeechSec >= MIN_SINGLE_WORD_SPEECH_SEC
+    : Boolean(silenceFeatures?.hasSpeech);
+  const noSpeech = silenceFeatures && !hasTaskAppropriateSpeech;
 
   let invalidReason = baseInvalidReason;
   if (!invalidReason && noSpeech) invalidReason = "no_speech_detected";
-  if (!invalidReason && mostlySilence) invalidReason = "mostly_silence";
+  if (!invalidReason && mostlySilence && !shortWordTask) invalidReason = "mostly_silence";
 
   let qualityScore = invalidReason ? 0 : 1;
   if (!invalidReason) {
@@ -306,7 +325,7 @@ const computeAudioQualityScore = ({
   };
 };
 
-const analyzeAudio = async ({ filePath, frontendAudioDurationMs } = {}) => {
+const analyzeAudio = async ({ filePath, frontendAudioDurationMs, taskType, targetText } = {}) => {
   if (!filePath || !fs.existsSync(filePath)) {
     return {
       extractionVersion: EXTRACTION_VERSION,
@@ -374,6 +393,8 @@ const analyzeAudio = async ({ filePath, frontendAudioDurationMs } = {}) => {
       volumeFeatures,
       silenceFeatures,
       durationMismatchMs,
+      taskType,
+      targetText,
     });
 
     return {
