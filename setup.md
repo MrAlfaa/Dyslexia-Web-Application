@@ -1,216 +1,141 @@
-# LexiLand Dyslexia Research Project Setup Guide
+# LexiLand Deployment Setup
 
-This guide explains how to set up and run the LexiLand / Dyslexia Research Project on Windows using both PowerShell and Git Bash.
+This guide explains how to clone and run the LexiLand Dyslexia Research Project on Windows using Git Bash.
 
-The project has three local parts:
+The application has three local runtime parts:
 
-- `backend/` - Node.js / Express / MongoDB API
-- `frontend/` - React / Vite web application
-- `.venv/` - Python virtual environment for Speech Processing ML audio model dependencies
+- `backend/`: Node.js, Express, and MongoDB API
+- `frontend/`: React and Vite web application
+- `.venv/`: Python environment used by Whisper ASR and the pronunciation-support model
 
 ## 1. Prerequisites
 
-Install these first:
+Install the following software before cloning the project:
 
-- Node.js LTS with npm
-- MongoDB running locally or a MongoDB Atlas connection string
-- Python 3.10, 3.11, or 3.12 for the Speech Processing ML dependencies
-- Git Bash for Git Bash commands
+- Git for Windows, including Git Bash
+- Node.js `20.19+` or `22.12+` with npm
+- Python `3.10`, `3.11`, or `3.12`
+- MongoDB Community Server, or access to a MongoDB Atlas database
+- A Chromium-based browser with microphone access
 
-This machine also has Python 3.14, but the project `.venv` was created with Python 3.10 because the current audio/ML package stack is more reliable on Python 3.10.
-
-## 2. Project Location
-
-PowerShell:
-
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project"
-```
-
-Git Bash:
+Confirm the installations in Git Bash:
 
 ```bash
-cd "/e/PROJECTS/Out Source Project/Dyslexia-Research-Project"
+git --version
+node --version
+npm --version
+py --list
 ```
 
-Note: in Git Bash, use `cd ..` with a space. Do not use `cd..`.
+## 2. Clone the Deployment Branch
 
-## 3. Backend Environment File
-
-Create or update:
-
-```text
-backend/.env
-```
-
-Required backend variables:
-
-```env
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/lexiland
-JWT_SECRET=replace_with_a_secure_local_secret
-```
-
-Optional Speech Processing variables:
-
-```env
-PYTHON_BIN=E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\.venv\Scripts\python.exe
-LEXILAND_PRONUNCIATION_MODEL_DIR=E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\ML_Model\lexiland_pronunciation_support_model_artifacts\model_artifacts
-PRONUNCIATION_MODEL_CALIBRATED=false
-LEXILAND_DEV_UNLOCK=true
-```
-
-`LEXILAND_DEV_UNLOCK=true` is only for local testing of Leo's Training Safari. Do not use it as a production rule.
-
-Keep `PRONUNCIATION_MODEL_CALIBRATED=false` until a speaker-disjoint calibration
-audit has been reproduced. With this value, the backend stores model estimates
-but excludes raw probabilities from longitudinal support-need scoring.
-
-After deploying the versioned speech-assessment schema to an existing database,
-run the index migration once:
-
-```powershell
-cd backend
-npm.cmd run migrate:speech-snapshots
-```
-
-Optional media storage and performance variables:
-
-```env
-MEDIA_STORAGE_PROVIDER=local
-CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
-CLOUDINARY_FOLDER=lexiland/speech
-SPEECH_BACKGROUND_PROCESSING=true
-SPEECH_ASR_SYNC_MODE=background
-```
-
-Use `MEDIA_STORAGE_PROVIDER=cloudinary` only after adding valid Cloudinary credentials through environment variables. Do not commit real Cloudinary API secrets. If a secret was shared in chat, logs, or screenshots, rotate it before production.
-
-Optional Ollama Cloud guardian guide variables:
-
-```env
-OLLAMA_CLOUD_ENABLED=false
-OLLAMA_API_KEY=<rotated_api_key>
-OLLAMA_BASE_URL=https://ollama.com/api
-OLLAMA_MODEL=gpt-oss:20b
-OLLAMA_TIMEOUT_MS=15000
-```
-
-The Ollama integration receives only de-identified aggregate speech-reading metrics. It does not receive child names, usernames, school details, audio, transcripts, storage URLs, or model probabilities. If Ollama is disabled, unavailable, or returns invalid output, the Guardian Console continues with a deterministic learning-support guide. Never commit an Ollama API key. Rotate any key exposed in chat, screenshots, or logs before using it in production.
-
-## 4. Frontend Environment File
-
-If needed, create:
-
-```text
-frontend/.env.local
-```
-
-Optional local frontend variable:
-
-```env
-VITE_LEXILAND_DEV_UNLOCK=true
-```
-
-## 5. Create Python Virtual Environment
-
-The project uses `.venv` at the repo root for Speech Processing ML dependencies.
-
-PowerShell:
-
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project"
-py -3.10 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r backend\src\modules\speechProcessing\ml\requirements.txt
-```
-
-If PowerShell blocks activation scripts:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
-```
-
-Git Bash:
+Open Git Bash in the folder where you want to keep the project, then run:
 
 ```bash
-cd "/e/PROJECTS/Out Source Project/Dyslexia-Research-Project"
+git clone --branch deployment --single-branch https://github.com/MrAlfaa/Dyslexia-Web-Application.git
+cd Dyslexia-Web-Application
+git branch --show-current
+```
+
+The final command should print:
+
+```text
+deployment
+```
+
+If the repository is already cloned, update it with:
+
+```bash
+git fetch origin
+git switch deployment
+git pull --ff-only origin deployment
+```
+
+## 3. Install Node.js Dependencies
+
+Run these commands from the repository root:
+
+```bash
+npm --prefix backend install
+npm --prefix frontend install
+```
+
+## 4. Create the Python Environment
+
+Run these commands from the repository root:
+
+```bash
 py -3.10 -m venv .venv
 source .venv/Scripts/activate
 python -m pip install --upgrade pip
 python -m pip install -r backend/src/modules/speechProcessing/ml/requirements.txt
 ```
 
-If `py -3.10` is not available, install Python 3.10, 3.11, or 3.12 and recreate the `.venv`.
+If Python 3.10 is unavailable, use Python 3.11 or 3.12 instead.
 
-Download the small English Whisper model once during setup. Runtime transcription uses the local cache so a child attempt does not wait for a network model lookup.
-
-PowerShell:
-
-```powershell
-.\.venv\Scripts\python.exe -c "from faster_whisper import WhisperModel; WhisperModel('tiny.en', device='cpu', compute_type='int8')"
-```
-
-Git Bash:
+Download the small English Whisper model once so the first child recording does not wait for the model download:
 
 ```bash
-.venv/Scripts/python.exe -c "from faster_whisper import WhisperModel; WhisperModel('tiny.en', device='cpu', compute_type='int8')"
+python -c "from faster_whisper import WhisperModel; WhisperModel('tiny.en', device='cpu', compute_type='int8')"
+deactivate
 ```
 
-## 6. Install Backend Dependencies
+## 5. Configure the Backend
 
-PowerShell:
-
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\backend"
-npm.cmd install
-```
-
-Git Bash:
+Create the local backend environment file:
 
 ```bash
-cd "/e/PROJECTS/Out Source Project/Dyslexia-Research-Project/backend"
-npm.cmd install
+touch backend/.env
+notepad backend/.env
 ```
 
-## 7. Install Frontend Dependencies
+Add the following configuration and replace the example MongoDB URI and JWT secret:
 
-PowerShell:
+```env
+PORT=5000
+MONGO_URI=mongodb://127.0.0.1:27017/lexiland
+JWT_SECRET=replace_with_a_long_random_secret
 
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\frontend"
-npm.cmd install
+PYTHON_BIN=.venv/Scripts/python.exe
+WHISPER_MODEL_SIZE=tiny.en
+WHISPER_DEVICE=cpu
+WHISPER_COMPUTE_TYPE=int8
+WHISPER_TIMEOUT_MS=45000
+
+MEDIA_STORAGE_PROVIDER=local
+SPEECH_BACKGROUND_PROCESSING=true
+SPEECH_ASR_SYNC_MODE=background
+PRONUNCIATION_MODEL_CALIBRATED=false
+LEXILAND_DEV_UNLOCK=false
 ```
 
-Git Bash:
+Important:
+
+- Never commit `backend/.env`.
+- Keep `PRONUNCIATION_MODEL_CALIBRATED=false` until the model has passed a speaker-disjoint calibration audit.
+- Keep `LEXILAND_DEV_UNLOCK=false` for normal use. Training activities unlock after identification.
+- For MongoDB Atlas, replace `MONGO_URI` with the Atlas connection string.
+- The default local media provider stores recordings under `backend/uploads/`, which is ignored by Git.
+
+For an existing database created before the speech snapshot revision feature, run this migration once:
 
 ```bash
-cd "/e/PROJECTS/Out Source Project/Dyslexia-Research-Project/frontend"
-npm.cmd install
-```
-
-## 8. Run Backend
-
-Open a terminal for the backend.
-
-PowerShell:
-
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project"
-$env:PYTHON_BIN = "$PWD\.venv\Scripts\python.exe"
 cd backend
-npm.cmd start
+npm run migrate:speech-snapshots
+cd ..
 ```
 
-Git Bash:
+## 6. Start the Backend: Terminal 1
+
+Open the first Git Bash terminal and run:
 
 ```bash
-cd "/e/PROJECTS/Out Source Project/Dyslexia-Research-Project"
-export PYTHON_BIN="$PWD/.venv/Scripts/python.exe"
+cd /path/to/Dyslexia-Web-Application
 cd backend
-npm.cmd start
+npm start
 ```
+
+Replace `/path/to/Dyslexia-Web-Application` with the location where the repository was cloned.
 
 Expected output:
 
@@ -219,152 +144,89 @@ MongoDB Connected
 Server running on port 5000
 ```
 
-## 9. Run Frontend
+Keep Terminal 1 open while using the application.
 
-Open a second terminal for the frontend.
+## 7. Start the Frontend: Terminal 2
 
-PowerShell:
-
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\frontend"
-npm.cmd run dev -- --host 127.0.0.1 --port 5173
-```
-
-Git Bash:
+Open a second Git Bash terminal and run:
 
 ```bash
-cd "/e/PROJECTS/Out Source Project/Dyslexia-Research-Project/frontend"
-npm.cmd run dev -- --host 127.0.0.1 --port 5173
+cd /path/to/Dyslexia-Web-Application
+cd frontend
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-Open:
+Open this URL in Chrome or Edge:
 
 ```text
 http://127.0.0.1:5173
 ```
 
-## 10. Build and Import Verification
+Keep Terminal 2 open while using the application.
 
-Backend import check:
+## 8. Verify the Installation
 
-PowerShell:
-
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\backend"
-node -e "require('./src/app'); console.log('backend app import ok'); process.exit(0)"
-```
-
-Git Bash:
+Run backend tests from a separate Git Bash terminal:
 
 ```bash
-cd "/e/PROJECTS/Out Source Project/Dyslexia-Research-Project/backend"
-node -e "require('./src/app'); console.log('backend app import ok'); process.exit(0)"
+cd /path/to/Dyslexia-Web-Application/backend
+npm test
 ```
 
-Frontend build check:
-
-PowerShell:
-
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\frontend"
-npm.cmd run build
-```
-
-Git Bash:
+Verify the frontend production build:
 
 ```bash
-cd "/e/PROJECTS/Out Source Project/Dyslexia-Research-Project/frontend"
-npm.cmd run build
+cd /path/to/Dyslexia-Web-Application/frontend
+npm run build
 ```
 
-Python ML dependency check:
-
-PowerShell:
-
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project"
-.\.venv\Scripts\python.exe -c "import numpy, pandas, librosa, soundfile, sklearn, joblib; print('ml deps import ok')"
-.\.venv\Scripts\python.exe backend\src\modules\speechProcessing\ml\predict_pronunciation_support.py --help
-```
-
-Git Bash:
+Verify the Python ML runtime:
 
 ```bash
-cd "/e/PROJECTS/Out Source Project/Dyslexia-Research-Project"
-source .venv/Scripts/activate
-python -c "import numpy, pandas, librosa, soundfile, sklearn, joblib; print('ml deps import ok')"
-python backend/src/modules/speechProcessing/ml/predict_pronunciation_support.py --help
+cd /path/to/Dyslexia-Web-Application
+.venv/Scripts/python.exe -c "import numpy, pandas, librosa, soundfile, sklearn, joblib; print('ML runtime OK')"
+.venv/Scripts/python.exe backend/src/modules/speechProcessing/ml/predict_pronunciation_support.py --help
 ```
 
-## 11. Browser Manual Test Checklist
-
-After backend and frontend are running:
+## 9. First Manual Test
 
 1. Open `http://127.0.0.1:5173`.
-2. Confirm the LexiLand frontend loads without a blank screen.
-3. Log in as a guardian and open the Guardian Console.
-4. Check:
-   - My Children
-   - Subscription
-   - Speech Overview
-   - Identification Result
-   - Improvement Progress
-   - Session History
-5. Log in as a child.
-6. Open Leo's Sound Safari.
-7. Open Leo's First Sound Check.
-8. Click the Start button and confirm the game modal opens.
-9. Record an audio attempt.
-10. Confirm invalid audio gives a child-safe retry message and valid audio moves to the next level.
-11. Open Leo's Training Safari and confirm the activity map/game UI loads.
+2. Register or log in as a guardian.
+3. Create a child profile.
+4. Log in with the child username.
+5. Complete Leo's identification activity.
+6. Confirm that the Training Safari unlocks.
+7. Record one improvement activity and confirm that valid speech advances while empty or invalid audio requests a retry.
+8. Return to the Guardian Console and verify Identification Result, Improvement Progress, Speech Support Results, and Session History.
 
-## 12. Common Troubleshooting
+## 10. Troubleshooting
 
-### MongoDB connection fails
+### MongoDB connection error
 
-Check `backend/.env`:
+Confirm that MongoDB is running and that `MONGO_URI` in `backend/.env` is valid.
 
-```env
-MONGO_URI=mongodb://127.0.0.1:27017/lexiland
-```
+### `spawn .venv/Scripts/python.exe ENOENT`
 
-Make sure MongoDB is running, or replace the value with a valid Atlas connection string.
+The root Python environment is missing. From the repository root, run:
 
-### `npm` command is blocked in PowerShell
-
-Use `npm.cmd` instead of `npm`.
-
-### Python ML packages fail to install
-
-Use Python 3.10, 3.11, or 3.12. Then recreate `.venv`:
-
-```powershell
-Remove-Item -Recurse -Force .venv
+```bash
 py -3.10 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r backend\src\modules\speechProcessing\ml\requirements.txt
+source .venv/Scripts/activate
+python -m pip install -r backend/src/modules/speechProcessing/ml/requirements.txt
 ```
 
-### Microphone does not work in the browser
+### Microphone permission denied
 
-Use `http://127.0.0.1:5173` or `http://localhost:5173`. Modern browsers allow microphone access on localhost, but may block it on arbitrary insecure origins.
+Open the application through `http://127.0.0.1:5173` or `http://localhost:5173`, then allow microphone access in the browser site settings.
 
-### Speech model does not run
+### Port already in use
 
-Confirm the model artifacts exist under:
+Stop the older Node.js or Vite process using that port. The backend expects port `5000`, and the documented frontend URL uses port `5173`.
 
-```text
-ML_Model/lexiland_pronunciation_support_model_artifacts/
-```
+### Whisper is slow on the first recording
 
-Then confirm `PYTHON_BIN` points to the `.venv` Python executable.
+Run the one-time Whisper download command in Section 4 before testing. Later recordings use the local model cache.
 
-### Frontend dependency audit warnings
+## 11. Stop the Application
 
-Run this to inspect them:
-
-```powershell
-cd "E:\PROJECTS\Out Source Project\Dyslexia-Research-Project\frontend"
-npm.cmd audit
-```
-
-Do not run forced dependency upgrades without checking for React/Vite breaking changes.
+Press `Ctrl+C` once in Terminal 1 and Terminal 2.
